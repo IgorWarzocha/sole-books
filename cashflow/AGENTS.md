@@ -1,15 +1,6 @@
-# Cashflow
-
-- This folder is the forward cash view. It is not the tax return.
-- Keep dated future income and financing in `projections.csv`.
-- Keep the current monthly subscription rate in `ongoing-costs.csv`. Keep rate changes, and only rate changes, in `cost-changes.csv`.
-- Glance repeats `ongoing-costs.csv` on the billing day after the latest actual expense. Do not also put that subscription in `projections.csv`.
-- Keep tax-ledger facts in `data/2026-27/`. Use `actuals.csv` for real cash movements that are not fresh income or tax expenses, such as repayments of financed equipment.
-- Use signed amounts in projections and actuals: income positive, outgoings negative.
-- Status words should preserve certainty: `actual`, `scheduled`, `expected`, `recurring`, `rough`, `tbc`, `cancelled`, `issued`.
-- `issued` is an invoice that has been issued and is not yet received. It stays on the due date for cash timing. It is not income until it is paid, and it is not the expected-income pipeline. The unpaid figure comes from `documents.csv`.
-- The running delta is a planning figure, not a reconciled bank balance.
-- Do not invent an exact date for a forecast that has none.
-- Do not duplicate a paid or received row here once it is in the ledgers.
-- Store credit and payment in kind affect the tax records but not a bank-style cashflow, unless real cash also moved.
-- For financed equipment, track future repayments here. The asset itself goes in `assets.csv` when it is bought or received.
+- Keep future income and financing in `projections.csv`. Current subscriptions belong in `ongoing-costs.csv`, with rate changes only in `cost-changes.csv`. Glance expands the run-rate, so do not duplicate next month's subscription in projections.
+- Use signed amounts: receipts positive, outgoings negative.
+- `issued` projections are unpaid invoices on their due dates, not received income or the unissued pipeline. Outstanding invoice totals come from `documents.csv`.
+- Use `actuals.csv` for cash movements not already recorded in tax ledgers, such as finance repayments. Do not duplicate a receipt or cost from the ledgers.
+- Store credit and payment in kind belong in tax records but not bank-style cashflow unless cash also moved.
+- Keep financed assets in the asset ledger and repayments here. Do not assume a repayment is a deductible expense.

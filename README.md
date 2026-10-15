@@ -38,7 +38,7 @@ Personal records do not go on `demo` or `uk`. `uk` stays empty because that is t
 
 The ledger tools need Python 3 and Make. The UC checker and full test suite also need Node.js with its built-in test runner. The dashboard needs npm too. You choose the agent and how it gets access to the repo.
 
-The workflows live in [.agent/skills/](.agent/skills/). UK tax and benefit guidance lives with the bookkeeping skill. Agents that do not discover this directory can read the skill files directly, following the routes in `AGENTS.md`.
+The workflows live in [.agent/skills/](.agent/skills/). UK tax and benefit guidance lives with the bookkeeping skill.
 
 On `uk` the ledgers have headers and no rows. Zeros on the dashboard are the empty template. This branch is a fictional 2026-27 year.
 

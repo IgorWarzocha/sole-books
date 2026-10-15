@@ -1,2 +1,1 @@
-- Keep non-invoice income evidence by source in this folder. The tax-year `income.csv` stays the record of what was received.
-- A platform payout belongs to the Universal Credit assessment period in which it was received. Reconcile the gross and the fee separately when the evidence shows both.
+- Keep non-invoice income evidence here by source. The tax-year income ledger remains the receipt record.

@@ -1,1 +1,0 @@
-- Fill the placeholders from `trader.csv`. On `uk`, leave this skeleton as placeholders.
