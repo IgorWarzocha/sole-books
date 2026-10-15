@@ -1,0 +1,4 @@
+- Before drafting an invoice, compare a genuine single payment with staged payments against Universal Credit assessment periods, expected costs, cashflow, and how well the client pays.
+- Agree the terms before issue. Use only real deposits or milestones.
+- Do not time an invoice just to change a Universal Credit deduction.
+- Fill the placeholders from `trader.csv`. On `uk`, leave this skeleton as placeholders.

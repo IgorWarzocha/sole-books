@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+"""Generate compact CSV snapshots for Amp's native file preview."""
+import argparse
+import csv
+from datetime import date, datetime
+from decimal import Decimal
+from pathlib import Path
+import runpy
+
+
+ROOT = Path(__file__).resolve().parent.parent
+SUMMARY = runpy.run_path(str(ROOT / "bin/summary"))
+
+
+def generate(data_dir, output_dir):
+    months = set()
+    totals = {name: {} for name in ("Income", "Operating expenses", "Equipment")}
+    suppliers = {}
+    errors = []
+    for filename, label, date_field, fields in (
+        ("income.csv", "Income", "received_date", ["amount_gbp"]),
+        ("expenses.csv", "Operating expenses", "paid_date", ["claimable_gbp", "total_gbp"]),
+        ("assets.csv", "Equipment", "paid_date", ["claimable_gbp", "total_gbp"]),
+    ):
+        path = data_dir / filename
+        if not path.is_file():
+            raise ValueError(f"Missing source ledger: {path}")
+        for number, row in enumerate(SUMMARY["read_rows"](path), 2):
+            month = date.fromisoformat(row[date_field]).strftime("%Y-%m")
+            field = next((f for f in fields if (row.get(f) or "").strip()), fields[-1])
+            amount = SUMMARY["money"](row.get(field), path, number, field, errors)
+            if not amount.is_finite():
+                errors.append(f"{path}:{number}: non-finite amount")
+                continue
+            months.add(month)
+            totals[label][month] = totals[label].get(month, Decimal("0")) + amount
+            if filename == "expenses.csv":
+                supplier = row.get("supplier") or "Unspecified supplier"
+                values = suppliers.setdefault(supplier, {})
+                values[month] = values.get(month, Decimal("0")) + amount
+    if errors:
+        raise ValueError("\n".join(errors))
+
+    months = sorted(months)
+    totals["Rough profit after equipment"] = {
+        month: totals["Income"].get(month, Decimal("0"))
+        - totals["Operating expenses"].get(month, Decimal("0"))
+        - totals["Equipment"].get(month, Decimal("0"))
+        for month in months
+    }
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for filename, heading, groups in (
+        ("monthly-ledger.csv", "Tax-ledger measure (GBP)", totals),
+        ("expenses-by-supplier.csv", "Supplier (claimed GBP)", dict(sorted(suppliers.items()))),
+    ):
+        with (output_dir / filename).open("w", newline="", encoding="utf-8") as stream:
+            writer = csv.writer(stream)
+            writer.writerow([heading, *months, "Total"])
+            for label, values in groups.items():
+                amounts = [values.get(month, Decimal("0")) for month in months]
+                writer.writerow([label, *(f"{v:.2f}" for v in amounts), f"{sum(amounts, Decimal('0')):.2f}"])
+
+    links = [
+        ("Monthly ledger", output_dir / "monthly-ledger.csv", "Income, claimed costs and rough profit by calendar month."),
+        ("Expenses by supplier", output_dir / "expenses-by-supplier.csv", "Claimed operating expenses by supplier and month."),
+        ("Income", data_dir / "income.csv", "Original receipts, invoice references and evidence paths."),
+        ("Expenses", data_dir / "expenses.csv", "Original payments, business shares and evidence paths."),
+        ("Equipment", data_dir / "assets.csv", "Original assets and claimed business amounts."),
+        ("Expense candidates", data_dir / "expense-candidates.csv", "Unresolved items, excluded from these totals."),
+        ("HMRC payments", data_dir / "hmrc.csv", "Payments to HMRC, separate from profit."),
+        ("Cashflow projections", ROOT / "cashflow/projections.csv", "Expected and scheduled movements, not received income."),
+        ("Cashflow actuals", ROOT / "cashflow/actuals.csv", "Additional cash movements, including finance repayments."),
+        ("Universal Credit periods", ROOT / "universal-credit/assessment-periods.csv", "Separate assessment-period figures and submission status."),
+    ]
+    generated = datetime.now().astimezone().isoformat(timespec="seconds")
+    text = f"""# Ledger desk: {data_dir.name}
+
+Open a CSV below and select **Preview** in Amp to see its table. Select **Source** to see the underlying CSV.
+
+## Open a spreadsheet
+
+| View | Contents |
+| --- | --- |
+"""
+    text += "".join(f"| [{label}]({path.resolve().as_uri()}) | {description} |\n" for label, path, description in links)
+    text += f"""
+## What these views mean
+
+- The first two CSVs are generated snapshots, not editable source ledgers. Generated at **{generated}**.
+- All amounts are GBP. Months follow the dates recorded in the tax ledgers. Zero means no recorded amount, not a reconciled or completed month.
+- Expenses and equipment use the recorded claimable amount, falling back to the total only when claimable is blank. Personal shares are not deducted again.
+- Rough profit matches the approach in `make summary`: income minus operating expenses minus equipment. It is not a tax bill, bank balance or UC earnings figure.
+- Non-cash ledger items and financed equipment remain in this tax view. Future receipts and finance repayments are not added to it.
+- The original CSVs remain the source of truth. Their links open the source files rather than copies.
+
+## Refresh
+
+Ask Amp to **refresh the ledger views**, or run `make views TAX_YEAR={data_dir.name}` from the workspace root. Reopen the preview if Amp still shows an older snapshot.
+"""
+    (output_dir / "README.md").write_text(text, encoding="utf-8")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("data_dir", type=Path)
+    args = parser.parse_args()
+    output = ROOT / "views" / args.data_dir.name
+    generate(args.data_dir.resolve(), output)
+    print(f"Ledger desk: {(output / 'README.md').as_uri()}")

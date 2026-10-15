@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+import argparse
+import csv
+from decimal import Decimal, InvalidOperation
+from pathlib import Path
+import sys
+
+
+def money(value, path, row_num, field, errors):
+    value = (value or "").strip().replace(",", "")
+    if not value:
+        return Decimal("0")
+    try:
+        return Decimal(value)
+    except InvalidOperation:
+        errors.append(f"{path}:{row_num}: bad money in {field}: {value!r}")
+        return Decimal("0")
+
+
+def read_rows(path):
+    if not path.exists():
+        return []
+    with path.open(newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def is_deferred_payment(row):
+    account = (row.get("account") or "").lower()
+    notes = (row.get("notes") or "").lower()
+    return any(marker in account or marker in notes for marker in ["klarna", "bnpl", "pay in 3", "paypal credit"])
+
+
+def is_noncash(row):
+    account = (row.get("account") or "").lower()
+    return any(marker in account for marker in ["voucher", "store credit", "payment in kind"])
+
+
+def add_actuals(rows, data_dir, errors):
+    for idx, row in enumerate(read_rows(data_dir / "income.csv"), start=2):
+        if is_noncash(row):
+            continue
+        rows.append({
+            "date": row.get("received_date", ""),
+            "flow": "income",
+            "status": "actual",
+            "counterparty": row.get("client", ""),
+            "description": row.get("description", ""),
+            "amount": money(row.get("amount_gbp"), data_dir / "income.csv", idx, "amount_gbp", errors),
+            "source": row.get("receipt_file", ""),
+        })
+
+    for filename, date_field, name_field, desc_field in [
+        ("expenses.csv", "paid_date", "supplier", "description"),
+        ("assets.csv", "paid_date", "supplier", "item"),
+    ]:
+        path = data_dir / filename
+        for idx, row in enumerate(read_rows(path), start=2):
+            if is_noncash(row):
+                continue
+            if filename == "assets.csv" and is_deferred_payment(row):
+                continue
+            rows.append({
+                "date": row.get(date_field, ""),
+                "flow": "expense" if filename == "expenses.csv" else "asset",
+                "status": "actual",
+                "counterparty": row.get(name_field, ""),
+                "description": row.get(desc_field, ""),
+                "amount": -money(row.get("total_gbp"), path, idx, "total_gbp", errors),
+                "source": row.get("receipt_file", ""),
+            })
+
+    path = data_dir / "hmrc.csv"
+    for idx, row in enumerate(read_rows(path), start=2):
+        amount = money(row.get("amount_gbp"), path, idx, "amount_gbp", errors)
+        kind = (row.get("type") or "hmrc").lower()
+        if amount > 0 and "refund" not in kind:
+            amount = -amount
+        rows.append({
+            "date": row.get("date", ""),
+            "flow": "hmrc",
+            "status": "actual",
+            "counterparty": "HMRC",
+            "description": row.get("type", ""),
+            "amount": amount,
+            "source": row.get("reference", ""),
+        })
+
+
+def add_projections(rows, path, errors):
+    for idx, row in enumerate(read_rows(path), start=2):
+        status = (row.get("status") or "").strip().lower()
+        if status == "cancelled":
+            continue
+        rows.append({
+            "date": row.get("date", ""),
+            "flow": row.get("flow", ""),
+            "status": row.get("status", "projected"),
+            "counterparty": row.get("counterparty", ""),
+            "description": row.get("description", ""),
+            "amount": money(row.get("amount_gbp"), path, idx, "amount_gbp", errors),
+            "source": row.get("source", ""),
+        })
+
+
+def fmt(value):
+    return f"£{value:,.2f}"
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Combine actual ledgers with cashflow projections.")
+    parser.add_argument("data_dir", type=Path)
+    parser.add_argument("--cash-actuals", type=Path, default=Path("cashflow/actuals.csv"))
+    parser.add_argument("--projections", type=Path, default=Path("cashflow/projections.csv"))
+    parser.add_argument("--opening", default="0", help="opening balance, if you want a real running bank-style balance")
+    parser.add_argument("--check", action="store_true")
+    args = parser.parse_args()
+
+    errors = []
+    opening = money(args.opening, "opening", 0, "opening", errors)
+    rows = []
+    add_actuals(rows, args.data_dir, errors)
+    add_projections(rows, args.cash_actuals, errors)
+    add_projections(rows, args.projections, errors)
+    rows.sort(key=lambda r: (r.get("date") or "", 0 if r.get("status") == "actual" else 1, r.get("counterparty") or ""))
+
+    actual_in = sum((r["amount"] for r in rows if r["status"] == "actual" and r["amount"] > 0), Decimal("0"))
+    actual_out = sum((-r["amount"] for r in rows if r["status"] == "actual" and r["amount"] < 0), Decimal("0"))
+    projected_in = sum((r["amount"] for r in rows if r["status"] != "actual" and r["amount"] > 0), Decimal("0"))
+    projected_out = sum((-r["amount"] for r in rows if r["status"] != "actual" and r["amount"] < 0), Decimal("0"))
+
+    print(f"Cashflow: actuals from {args.data_dir.name} + {args.projections}")
+    print("-" * 72)
+    print(f"Actual received     {fmt(actual_in):>12}")
+    print(f"Actual paid/spent   {fmt(actual_out):>12}")
+    print(f"Projected incoming  {fmt(projected_in):>12}")
+    print(f"Projected outgoing  {fmt(projected_out):>12}")
+    print(f"Projected end delta {fmt(actual_in - actual_out + projected_in - projected_out):>12}")
+    if opening:
+        print(f"Projected balance   {fmt(opening + actual_in - actual_out + projected_in - projected_out):>12}")
+
+    print("\nTimeline")
+    print("date        status     flow      amount        running     description")
+    print("-" * 72)
+    running = opening
+    for row in rows:
+        running += row["amount"]
+        who = row["counterparty"]
+        desc = row["description"]
+        label = f"{who} — {desc}" if who and desc else who or desc
+        print(f"{row['date']:<10}  {row['status']:<9}  {row['flow']:<8}  {fmt(row['amount']):>10}  {fmt(running):>12}  {label}")
+
+    if errors:
+        print("\nProblems", file=sys.stderr)
+        for error in errors:
+            print(f"- {error}", file=sys.stderr)
+        if args.check:
+            return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

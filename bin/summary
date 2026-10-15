@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+import argparse
+import csv
+from decimal import Decimal, InvalidOperation
+from pathlib import Path
+import sys
+
+MONEY_FIELDS = {
+    "income.csv": ["amount_gbp"],
+    "expenses.csv": ["claimable_gbp", "total_gbp"],
+    "assets.csv": ["claimable_gbp", "total_gbp"],
+    "hmrc.csv": ["amount_gbp"],
+}
+
+def money(value, path, row_num, field, errors):
+    value = (value or "").strip().replace(",", "")
+    if not value:
+        return Decimal("0")
+    try:
+        return Decimal(value)
+    except InvalidOperation:
+        errors.append(f"{path}:{row_num}: bad money in {field}: {value!r}")
+        return Decimal("0")
+
+def read_rows(path):
+    if not path.exists():
+        return []
+    with path.open(newline="") as f:
+        return list(csv.DictReader(f))
+
+def total(path, preferred_fields, errors, by_category=False):
+    rows = read_rows(path)
+    total_value = Decimal("0")
+    categories = {}
+    count = 0
+    for idx, row in enumerate(rows, start=2):
+        count += 1
+        field = next((name for name in preferred_fields if (row.get(name) or "").strip()), preferred_fields[-1])
+        value = money(row.get(field), path, idx, field, errors)
+        total_value += value
+        if by_category:
+            category = (row.get("category") or "Uncategorised").strip() or "Uncategorised"
+            categories[category] = categories.get(category, Decimal("0")) + value
+    return count, total_value, categories
+
+def print_rows(title, rows, amount_field, empty_message):
+    print(f"\n{title}")
+    if not rows:
+        print(f"- {empty_message}")
+        return
+    for row in rows:
+        date = row.get("paid_date") or row.get("received_date") or row.get("date") or ""
+        supplier = row.get("supplier") or row.get("client") or ""
+        description = row.get("description") or row.get("type") or row.get("item") or ""
+        amount = fmt(money(row.get(amount_field), "summary", 0, amount_field, []))
+        print(f"- {date}: {supplier} — {description} — {amount}")
+
+def fmt(value):
+    return f"£{value:,.2f}"
+
+def main():
+    parser = argparse.ArgumentParser(description="Summarise self-employment CSV records.")
+    parser.add_argument("data_dir", type=Path)
+    parser.add_argument("--check", action="store_true", help="fail if CSV money fields are invalid")
+    parser.add_argument("--details", action="store_true", help="print income and claimed expense rows")
+    args = parser.parse_args()
+
+    errors = []
+    income_rows = read_rows(args.data_dir / "income.csv")
+    expense_rows = read_rows(args.data_dir / "expenses.csv")
+    income_count, income, _ = total(args.data_dir / "income.csv", ["amount_gbp"], errors)
+    expense_count, expenses, expense_categories = total(
+        args.data_dir / "expenses.csv", ["claimable_gbp", "total_gbp"], errors, by_category=True
+    )
+    asset_count, assets, _ = total(args.data_dir / "assets.csv", ["claimable_gbp", "total_gbp"], errors)
+    hmrc_count, hmrc_paid, _ = total(args.data_dir / "hmrc.csv", ["amount_gbp"], errors)
+
+    profit_before_assets = income - expenses
+    rough_profit = income - expenses - assets
+
+    print(f"Self-employment summary: {args.data_dir.name}")
+    print("-" * 42)
+    print(f"Income          {fmt(income):>14}  ({income_count} rows)")
+    print(f"Expenses        {fmt(expenses):>14}  ({expense_count} rows)")
+    print(f"Assets/equipment{fmt(assets):>14}  ({asset_count} rows)")
+    print(f"HMRC paid       {fmt(hmrc_paid):>14}  ({hmrc_count} rows)")
+    print("-" * 42)
+    print(f"Profit before assets {fmt(profit_before_assets):>8}")
+    print(f"Rough profit         {fmt(rough_profit):>8}")
+
+    if expense_categories:
+        print("\nExpenses by category")
+        for category, value in sorted(expense_categories.items()):
+            print(f"- {category}: {fmt(value)}")
+
+    if args.details:
+        print_rows("Income rows", sorted(income_rows, key=lambda r: r.get("received_date", "")), "amount_gbp", "no income recorded")
+        print_rows("Claimed expense rows", sorted(expense_rows, key=lambda r: (r.get("paid_date", ""), r.get("supplier", ""))), "claimable_gbp", "no expenses recorded")
+
+    if errors:
+        print("\nProblems", file=sys.stderr)
+        for error in errors:
+            print(f"- {error}", file=sys.stderr)
+        if args.check:
+            return 1
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())
