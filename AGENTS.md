@@ -1,6 +1,8 @@
 - If `SETUP.md` exists, read it and execute its actions, tick off each completed phase, and delete `SETUP.md` only when all phases are complete.
 - `US-experimental` is an empty, experimental US template. Personal books belong on a private branch created from it. Do not put personal rows on distribution branches `US-experimental`, `uk` or `demo`.
 - `uk` and `demo` remain UK editions. Do not import UK tax-year, VAT or Universal Credit rules into US records.
+- On a personal-books branch, every GitHub remote must point to a private repository. Verify all fetch and push destinations with authenticated GitHub visibility data before handling personal records and again before pushing. A branch inside a public repository is not private. If any destination is public or cannot be verified, stop and resolve it with the user. Never change repository visibility without approval.
+- Use coherent local Git commits as change history, not per-edit logs in Markdown. Keep `state.md` focused on current facts and decisions and `todo.md` on unresolved actions. Do not create a parallel changelog or narrate every update. Preserve source evidence and financial correction trails.
 - Load `.agent/skills/us-bookkeeping/SKILL.md` before recording or reviewing US transactions. This branch supports USD calendar-year cash-basis records for a US-resident individual service-business sole proprietor, not automated tax compliance.
 - Keep facts in CSVs, durable decisions in `state.md`, and unresolved actions in `todo.md`. Never invent figures or evidence. Label estimates.
 - The user's confirmation or original evidence wins over an assistant's statement. Preparation, issue, receipt, filing and payment are distinct events.
