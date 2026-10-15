@@ -12,20 +12,16 @@ It is built for UK sole traders using cash-basis records, with cashflow projecti
 
 ## Try the example
 
-Opening this repo, forking it, or using **Use this template** lands on `demo`. Explore a fictional 2026-27 year for Jordan Hale, trading as Hale Studio. See how receipts, expenses and invoices feed the dashboard before adding anything of your own.
+Explore a fictional 2026-27 year for Jordan Hale, trading as Hale Studio. See how receipts, expenses and invoices feed the dashboard.
 
 ## Make it yours
 
-You are on `demo`, the fictional Hale Studio year. Use it to see how the books work. Do not start real books here.
+Keep real records in a private repository. The dashboard is localhost-only and has no login. Keep it that way, or use an authenticated tunnel for remote access.
 
-Use a private repository for real records. The dashboard is localhost-only and has no login. Keep it that way, or use an authenticated tunnel for remote access.
-
-1. Get the `uk` branch. A fork has it. **Use this template** copies `demo` unless you include all branches. If `uk` is not in your copy, fetch it from this repo.
-2. Create your own branch from `uk`.
+1. Start with the empty [UK template](https://github.com/IgorWarzocha/sole-books/tree/uk), not the fictional example.
+2. Make a private copy for your own books.
 3. Ask your agent to set up your books using the UK branch's [SETUP.md](https://github.com/IgorWarzocha/sole-books/blob/uk/SETUP.md). It will ask for your business details, check what needs researching and help you bring in existing records or work alongside your current tools.
 4. Review the setup with your agent before relying on the books. Then give it receipts, paid costs and invoice details as they arrive.
-
-Personal records do not go on `demo` or `uk`. `uk` stays empty because that is the branch that gets upgraded later.
 
 ## What you get
 
@@ -37,7 +33,7 @@ Personal records do not go on `demo` or `uk`. `uk` stays empty because that is t
 
 The ledger tools need Python 3 and Make. The UC checker and full test suite also need Node.js with its built-in test runner. The dashboard needs npm too. You choose the agent and how it gets access to the repo.
 
-On `uk` the ledgers have headers and no rows. Zeros on the dashboard are the empty template. This branch is a fictional 2026-27 year.
+Your books start empty. Setup brings in your existing records or gives you a clean starting point. A zero on the dashboard means no recorded amount, not a reconciled balance.
 
 ## You stay in control
 
