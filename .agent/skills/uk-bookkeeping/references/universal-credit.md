@@ -1,28 +1,4 @@
-# UK rules
-
-This is the UK recording layer. Check official guidance and the trader's own HMRC and DWP notices. Start real books on a private branch created from `uk`.
-
-## Tax year
-
-- The UK tax year runs from 6 April to 5 April.
-- This template starts with `data/2026-27`, covering 6 April 2026 to 5 April 2027. Add a new folder for the next year when it starts.
-- Record income when the money is received and expenses when the money is paid.
-- Self Assessment is filed by the user. This repo does not submit it.
-
-## Before using real books
-
-Record these decisions and evidence in `state.md`, with unresolved actions in `todo.md`.
-
-1. Confirm identity, trading start, accounting basis and registration. Gross trading income over £1,000 generally requires Self Assessment registration, but other circumstances can also require a return. See [setting up as a sole trader](https://www.gov.uk/set-up-sole-trader).
-2. Record HMRC filing and payment deadlines. Normally notify HMRC by 5 October following the first relevant tax year, file paper returns by 31 October or online by 31 January, and pay the balancing amount by 31 January. Payments on account can be due on 31 January and 31 July. Check [Self Assessment deadlines](https://www.gov.uk/self-assessment-tax-returns/deadlines), including exceptions for later notices.
-3. Retain invoices, receipts and bank evidence, including cash and non-cash transactions. Link entries to evidence. Missing evidence remains an unresolved task. Keep Self Assessment records for at least five years after the relevant 31 January deadline. For 2026-27, normally keep them through 31 January 2033. Check [retention rules](https://www.gov.uk/self-employed-records/how-long-to-keep-your-records) for very late returns and retain records needed for an open enquiry. VAT records generally need at least six years.
-4. Check [VAT registration](https://www.gov.uk/vat-registration/when-to-register) using taxable turnover, not cash-basis tax-year profit. For UK-based businesses the general compulsory thresholds are more than £90,000 over the last 12 months, or more than £90,000 expected in the next 30 days. Other conditions can require registration. Record the review date and revisit when turnover changes. This repo does not calculate VAT returns. Its invoice skeleton is non-VAT only.
-5. Check [Making Tax Digital eligibility](https://www.gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax). Subject to eligibility and exemptions, qualifying income over £50,000 in 2024-25 requires MTD from 6 April 2026, over £30,000 in 2025-26 from 6 April 2027, and over £20,000 in 2026-27 from 6 April 2028. Qualifying income includes relevant self-employment and property income before expenses. CSVs alone do not meet MTD requirements. If mandated, use compatible software and its supported digital-record and submission workflow. Record that workflow here. Manual retyping is not a digital link.
-6. Keep the repository private and check the chosen agent provider's access and data handling. Glance binds to `127.0.0.1:48173` without a login. Do not bind it to a public interface. Use an authenticated tunnel for deliberate remote access.
-
-Record business shares and claimable amounts. Keep uncertain costs in `expense-candidates.csv`. Cars, property, finance arrangements and private use need checking against [HMRC expense rules](https://www.gov.uk/expenses-if-youre-self-employed). `make summary` is rough profit, not a tax calculation. `make check` validates recorded amounts and dates, not allowability or completeness.
-
-## Universal Credit
+Use `universal-credit/assessment-periods.csv` for period records and `universal-credit/rates.csv` for dated rates. Reconcile against the claimant's evidence, not the demo's invented circumstances.
 
 - Copy assessment dates and the reporting task deadline from the claimant's UC account. `report_deadline` is the reporting deadline, `expected_payment_date` is the expected pay date, and `payment_received_date` is the arrival date. None is inferred from another. The demo's 10th-to-9th periods are examples, not UK-wide rules.
 - Report for the dates DWP requests, including zero periods, when prompted in the account. A prepared calculation is not a submitted report or an award. Follow [DWP reporting guidance](https://www.gov.uk/government/publications/universal-credit-for-the-self-employed/how-to-report-your-earnings-from-self-employment).
@@ -50,9 +26,3 @@ Glance shows only explicitly configured unpaid periods with an expected payment 
 ### Migrating earlier books
 
 Earlier versions stored the payment date in `report_deadline`. Move that value to `expected_payment_date`, then obtain the reporting task deadline separately. Move actual arrival dates from notes into `payment_received_date`. Add the calculation-mode, scope, MIF and loss columns from the current empty header. Reconcile equipment and other UC adjustments, including historical losses, before enabling calculation. Do not copy the demo's invented claimant assumptions into real books.
-
-## What the user must still check
-
-- Personal Allowance, other taxable income, and National Insurance before estimating a tax bill.
-- Whether they are VAT registered. The invoice skeleton assumes they are not.
-- The standard allowance and housing element on their own statement. The rates file is a starting point, not their award.
