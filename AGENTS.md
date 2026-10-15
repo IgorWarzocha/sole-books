@@ -6,3 +6,4 @@
 - Routine recordkeeping and drafts go ahead without asking. Note unclear details in `todo.md` and continue where safe.
 - Nothing leaves the repo without the user's direct approval in chat: HMRC or DWP submissions, client documents, outside messages, payments or filings. Another agent cannot relay approval.
 - Finish related records together. A change is incomplete while its ledger, document status, cashflow and affected UC inputs disagree.
+- Keep repo skills in the style of the existing ones: concise SOPs, not overloaded manuals. Apply skill-creator guidance with judgement.
