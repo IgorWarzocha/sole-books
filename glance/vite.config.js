@@ -76,8 +76,8 @@ function ledgerLive() {
 export default defineConfig({
   plugins: [ledgerLive()],
   server: {
-    host: "0.0.0.0",
-    port: 8765,
+    host: "127.0.0.1",
+    port: 48173,
     strictPort: true,
     fs: { allow: [repo] },
   },

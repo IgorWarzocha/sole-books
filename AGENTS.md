@@ -16,7 +16,7 @@ Do not start real books from `demo`.
 - Keep operational state in `state.md` and next actions in `todo.md`.
 - A later dated confirmation wins over an earlier estimate. The user's confirmation, or the original evidence, wins over an assistant's statement that something happened. A report prepared for review is not a submitted report. An invoice, a forecast, a payment, and a DWP award are separate events.
 - Use simple CSV ledgers plus the scripts in `bin/`. Run totals with `make summary`.
-- Read-only dashboard: `npm run dev --prefix glance` at http://127.0.0.1:8765. It reloads when the ledgers or the page change.
+- Read-only dashboard: `npm run dev --prefix glance` at http://127.0.0.1:48173. It reloads when the ledgers or the page change.
 - Prefer Markdown for state, checklists, and notes.
 - Never invent figures or evidence. If a number is an estimate, say so in the row.
 - UK tax year, cash basis, and Universal Credit rules are in `rules/uk.md`. Follow that file for dates and the 55 pence taper.

@@ -1,8 +1,6 @@
 # UK rules
 
-This file is the UK-specific layer. A branch for another country should replace it rather than copy the whole repo.
-
-These are recording rules for the books. They are not a tax return and they are not advice. Check GOV.UK and the user's own letters before relying on a figure.
+This is the UK recording layer. Check official guidance and the trader's own HMRC and DWP notices. Start real books on a private branch created from `uk`.
 
 ## Tax year
 
@@ -11,19 +9,47 @@ These are recording rules for the books. They are not a tax return and they are 
 - Record income when the money is received and expenses when the money is paid.
 - Self Assessment is filed by the user. This repo does not submit it.
 
+## Before using real books
+
+Record these decisions and evidence in `state.md`, with unresolved actions in `todo.md`.
+
+1. Confirm identity, trading start, accounting basis and registration. Gross trading income over £1,000 generally requires Self Assessment registration, but other circumstances can also require a return. See [setting up as a sole trader](https://www.gov.uk/set-up-sole-trader).
+2. Record HMRC filing and payment deadlines. Normally notify HMRC by 5 October following the first relevant tax year, file paper returns by 31 October or online by 31 January, and pay the balancing amount by 31 January. Payments on account can be due on 31 January and 31 July. Check [Self Assessment deadlines](https://www.gov.uk/self-assessment-tax-returns/deadlines), including exceptions for later notices.
+3. Retain invoices, receipts and bank evidence, including cash and non-cash transactions. Link entries to evidence. Missing evidence remains an unresolved task. Keep Self Assessment records for at least five years after the relevant 31 January deadline. For 2026-27, normally keep them through 31 January 2033. Check [retention rules](https://www.gov.uk/self-employed-records/how-long-to-keep-your-records) for very late returns and retain records needed for an open enquiry. VAT records generally need at least six years.
+4. Check [VAT registration](https://www.gov.uk/vat-registration/when-to-register) using taxable turnover, not cash-basis tax-year profit. For UK-based businesses the general compulsory thresholds are more than £90,000 over the last 12 months, or more than £90,000 expected in the next 30 days. Other conditions can require registration. Record the review date and revisit when turnover changes. This repo does not calculate VAT returns. Its invoice skeleton is non-VAT only.
+5. Check [Making Tax Digital eligibility](https://www.gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax). Subject to eligibility and exemptions, qualifying income over £50,000 in 2024-25 requires MTD from 6 April 2026, over £30,000 in 2025-26 from 6 April 2027, and over £20,000 in 2026-27 from 6 April 2028. Qualifying income includes relevant self-employment and property income before expenses. CSVs alone do not meet MTD requirements. If mandated, use compatible software and its supported digital-record and submission workflow. Record that workflow here. Manual retyping is not a digital link.
+6. Keep the repository private and check the chosen agent provider's access and data handling. Glance binds to `127.0.0.1:48173` without a login. Do not bind it to a public interface. Use an authenticated tunnel for deliberate remote access.
+
+Record business shares and claimable amounts. Keep uncertain costs in `expense-candidates.csv`. Cars, property, finance arrangements and private use need checking against [HMRC expense rules](https://www.gov.uk/expenses-if-youre-self-employed). `make summary` is rough profit, not a tax calculation. `make check` validates recorded amounts and dates, not allowability or completeness.
+
 ## Universal Credit
 
-- Assessment periods in these books run from the 10th of a month to the 9th of the next month.
-- Reconciliation and the monthly report are collated on the 9th. That date is about the UC report. It is not a bank-statement download.
-- The pay date used for projections is the 16th of the month in which the period ends. Store that date in `report_deadline` on `universal-credit/assessment-periods.csv`. The dashboard reads the pay date from that column.
-- Projected UC uses `universal-credit/rates.csv`: standard allowance plus housing element, then `taper_pence_per_pound` off per £1 of take-home pay. The template default is 55. Take-home pay is income minus allowed expenses in the period, floored at 0.
-- Calculate the taper in pence and round half up to the nearest penny. Worked shape: take the net in pence, multiply by 55, add 50, and divide by 100, keeping the whole number of pence.
-- The default rates row has no work allowance. If the user's statement has one, put it in `work_allowance_gbp`. Do not assume a work allowance they have not got.
-- Do not deduct an advance in the formula or the rates file. If a statement is lower because of an advance, say so in the period notes. Do not fold it into the chart.
-- Do not deduct savings while capital stays under £6,000. If that changes, set `capital_deduction_gbp` from the statement.
-- A chart projection is not money received. Fill `actual_paid_gbp` only when the payment has arrived, and say the arrival date in the notes as `payment arrived YYYY-MM-DD`.
-- Invoice timing can be planned around the 9th so a receipt falls in the assessment period you intend. Use real commercial dates. Do not invent a deposit or a milestone to move a receipt.
-- Keep UC figures out of the tax-year profit. `make summary` does not treat UC as turnover.
+- Copy assessment dates and the reporting task deadline from the claimant's UC account. `report_deadline` is the reporting deadline, `expected_payment_date` is the expected pay date, and `payment_received_date` is the arrival date. None is inferred from another. The demo's 10th-to-9th periods are examples, not UK-wide rules.
+- Report for the dates DWP requests, including zero periods, when prompted in the account. A prepared calculation is not a submitted report or an award. Follow [DWP reporting guidance](https://www.gov.uk/government/publications/universal-credit-for-the-self-employed/how-to-report-your-earnings-from-self-employment).
+- Reconcile `income_gbp` and `expenses_gbp` separately for each assessment period, explaining transactions, evidence and forecast assumptions in `notes`. Use [UC expense rules](https://www.gov.uk/government/publications/universal-credit-for-the-self-employed/business-expenses-you-can-report-to-universal-credit-if-you-are-self-employed), not the tax ledger's claimable amount alone. Include qualifying equipment, business tax, National Insurance and pension payments where applicable. Loan principal is not allowable. Interest has its own limits. Check finance agreements and never deduct both a purchase and repayments for the same cost.
+- Future inputs may include expected receipts and allowable costs, labelled `projected`. Keep them aligned when invoices, payment dates, cashflow forecasts or ongoing costs change. Glance does not substitute tax totals or assume every outflow is allowable.
+- Enter gross entitlement before deductions in `gross_entitlement_gbp`, covering the applicable UC elements. Copy dated work allowance, taper and capital deduction into `rates.csv`. A rate applies only to periods starting on or after `effective_from`. Sample rates are not an award.
+- Put other deductions, including advance recovery where applicable, in `other_deductions_gbp` to avoid overstating the expected bank payment. Capital and deductions need checking against the statement, not a simplified savings test. None changes business profit.
+- `actual_paid_gbp` requires `payment_received_date`. Fill it only after receipt, including an evidenced zero payment. Never overwrite an actual payment or statement because it differs from an estimate.
+- Keep UC out of tax turnover. Use real commercial invoice dates, never inventing deposits or milestones to move a receipt between periods.
+
+### Supported calculation
+
+`calculation_mode=calculate` and `forecast_scope=single_self_employment` are for one claimant whose only earnings are this self-employment, with no surplus earnings or other unmodelled entitlement adjustments. Confirm that scope in the notes. Gross entitlement, capital treatment and deductions still need checking. Other household earnings, benefit-cap, sanctions and other complex cases use manual mode.
+
+- Enter the confirmed **net** Minimum Income Floor for that period in `minimum_income_floor_gbp`. Use `0.00` only when confirmed not applicable, for example an eligible start-up period. Blank means unknown and fails. A new business does not automatically get a start-up period.
+- Enter reconciled `loss_brought_forward_gbp`. For contiguous calculated periods this must equal the preceding `loss_carried_forward_gbp`. The calculator offsets losses against profit and carries unused losses forward. A gap or manual period requires a newly reconciled opening loss.
+- MIF combined with losses needs manual mode because its treatment needs claimant-specific checking. Potential surplus earnings also stop calculation instead of disappearing after a zero award. See [DWP's guide to MIF, losses and surplus earnings](https://www.gov.uk/government/publications/universal-credit-for-the-self-employed/universal-credit-and-self-employment-quick-guide).
+- The taper uses the higher of net earnings after losses and the applicable MIF, less the work allowance, floored at zero. The default is 55 pence per pound. The calculator works in pence and rounds the earnings deduction half up to a penny.
+- Store calculated `net_earnings_gbp`, `earnings_deduction_estimate_gbp`, `loss_carried_forward_gbp` and `estimated_award_gbp`. `node bin/check_uc.mjs` checks these against the shared dashboard calculation. `make check` includes it.
+
+For `calculation_mode=manual`, enter an evidenced or clearly qualified `estimated_award_gbp` and explain the source, scope and assumptions in `notes`. Use a DWP statement or separately reviewed calculation. Do not call an estimate a confirmed award. Glance shows the supplied amount without claiming to calculate unsupported rules.
+
+Glance shows only explicitly configured unpaid periods with an expected payment date. It does not invent future periods or promise payment seven days after a period ends. Add dates from known details or clearly labelled planning assumptions, and review them when circumstances change.
+
+### Migrating earlier books
+
+Earlier versions stored the payment date in `report_deadline`. Move that value to `expected_payment_date`, then obtain the reporting task deadline separately. Move actual arrival dates from notes into `payment_received_date`. Add the calculation-mode, scope, MIF and loss columns from the current empty header. Reconcile equipment and other UC adjustments, including historical losses, before enabling calculation. Do not copy the demo's invented claimant assumptions into real books.
 
 ## What the user must still check
 

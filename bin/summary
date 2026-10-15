@@ -1,35 +1,13 @@
 #!/usr/bin/env python3
 import argparse
-import csv
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from pathlib import Path
 import sys
 
-MONEY_FIELDS = {
-    "income.csv": ["amount_gbp"],
-    "expenses.csv": ["claimable_gbp", "total_gbp"],
-    "assets.csv": ["claimable_gbp", "total_gbp"],
-    "hmrc.csv": ["amount_gbp"],
-}
-
-def money(value, path, row_num, field, errors):
-    value = (value or "").strip().replace(",", "")
-    if not value:
-        return Decimal("0")
-    try:
-        return Decimal(value)
-    except InvalidOperation:
-        errors.append(f"{path}:{row_num}: bad money in {field}: {value!r}")
-        return Decimal("0")
-
-def read_rows(path):
-    if not path.exists():
-        return []
-    with path.open(newline="") as f:
-        return list(csv.DictReader(f))
+from ledger import money, read_rows
 
 def total(path, preferred_fields, errors, by_category=False):
-    rows = read_rows(path)
+    rows = read_rows(path, errors)
     total_value = Decimal("0")
     categories = {}
     count = 0
@@ -61,7 +39,7 @@ def fmt(value):
 def main():
     parser = argparse.ArgumentParser(description="Summarise self-employment CSV records.")
     parser.add_argument("data_dir", type=Path)
-    parser.add_argument("--check", action="store_true", help="fail if CSV money fields are invalid")
+    parser.add_argument("--check", action="store_true", help="fail if ledger money or tax-year dates are invalid")
     parser.add_argument("--details", action="store_true", help="print income and claimed expense rows")
     args = parser.parse_args()
 
