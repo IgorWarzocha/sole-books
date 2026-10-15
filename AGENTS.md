@@ -1,6 +1,8 @@
 - If `SETUP.md` exists, read it and execute its actions, tick off each completed phase, and delete `SETUP.md` only when all phases are complete.
 - `uk` is the empty, upgradeable template. Real records belong on a private branch created from `uk`, never on `uk` or `demo`. Do not start real books from `demo`.
 - `demo` contains fictional books, not the user's records. Never replace its sample figures with personal data.
+- On a personal-books branch, every GitHub remote must point to a private repository. Verify all fetch and push destinations with authenticated GitHub visibility data before handling personal records and again before pushing. A branch inside a public repository is not private. If any destination is public or cannot be verified, stop and resolve it with the user. Never change repository visibility without approval.
+- Use coherent local Git commits as change history, not per-edit logs in Markdown. Keep `state.md` focused on current facts and decisions and `todo.md` on unresolved actions. Do not create a parallel changelog or narrate every update. Preserve source evidence and financial correction trails.
 - Keep ledger facts in CSVs, durable status and decisions in `state.md`, and unresolved actions in `todo.md`. Nested guidance owns local exceptions, not ledger facts.
 - A later dated confirmation wins over an earlier estimate. The user's confirmation or original evidence wins over an assistant's claim. A prepared report, a submission, an invoice, a receipt and a DWP award are separate events.
 - Never invent figures or evidence. Label estimates. File supplied bank statements, but do not invent a statement-download timetable.
