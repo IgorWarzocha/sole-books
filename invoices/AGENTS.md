@@ -1,3 +1,3 @@
-- Use calendar-year folders. Keep editable `INV-0001.html` and `CN-0001.html` files there, with PDF exports under `pdfs/` using matching names.
+- Use calendar-year folders. Keep editable `INV-0001.html` and `CN-0001.html` there, with matching PDF exports under `pdfs/`.
 - `*-draft.html` is not issued. Preserve that distinction in the document register.
-- The skeleton has no company-number field. Do not add one for a sole trader.
+- Keep sensitive payment instructions outside the repository. Confirm state and local requirements before using the skeleton.

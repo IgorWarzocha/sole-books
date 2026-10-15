@@ -2,24 +2,19 @@
 
 ## This branch
 
-`uk` is the empty template. The ledgers have headers and no rows. That is intentional.
+`US-experimental` is an empty experimental US template. Personal records belong on a private working branch created from it. The author is not a US resident. AI-assisted research is not professional review.
 
-Put the trader's name, address, and bank details in `trader.csv` on a branch created from `uk`. Do not fill them in on `uk`.
+## Recording scope
 
-## Tax year
-
-- Folder: `data/2026-27`
-- UK tax year: 6 April 2026 to 5 April 2027
-- Tax requirements: `.agent/skills/uk-bookkeeping/references/tax.md`
-
-## Basis
-
-Cash basis. Income when received. Expenses when paid.
+- Calendar year 2026, 1 January to 31 December, in `data/2026/`
+- USD, cash basis, US-resident individual service-business sole proprietor
+- Federal guidance: `.agent/skills/us-bookkeeping/references/federal.md`
+- State and local checks: `.agent/skills/us-bookkeeping/references/state-and-reporting.md`
 
 ## Not started
 
-Nothing has been registered, invoiced, or submitted from this branch. There is no Universal Credit award here, and no tax estimate, because there are no figures.
+No identity, tax residency, business start, registrations, filing obligations, sales-tax treatment or local requirements have been confirmed. Nothing has been invoiced, paid, filed or submitted. There is no tax estimate or reconciled bank balance.
 
-The tax-registration, VAT and MTD decisions have not been made. Record them and the evidence-retention workflow only on the trader's own branch. Follow the [UK setup checklist](.agent/skills/uk-bookkeeping/references/tax.md#before-using-real-books).
+`trader.csv` uses UTC only as a placeholder. Confirm the business time zone before using date-sensitive dashboard views. Store sensitive tax identifiers and banking instructions outside this repository.
 
-UC assessment dates, MIF status, deductions and opening losses are unknown. The empty period ledger makes no claim about entitlement. Any published rate shown is only a starting reference, not the trader's award.
+Asset deductions require an explicit reviewed current-year amount. Purchase cost alone is not a depreciation decision. Personal income-tax and self-employment-tax payments are cash outflows, not business-expense deductions.

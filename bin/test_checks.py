@@ -1,17 +1,13 @@
+import csv
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
 
+from ledger import SCHEMAS
 
 BIN = Path(__file__).resolve().parent
-LEDGERS = {
-    "income.csv": ("received_date", "amount_gbp"),
-    "expenses.csv": ("paid_date", "total_gbp"),
-    "assets.csv": ("paid_date", "total_gbp"),
-    "hmrc.csv": ("date", "amount_gbp"),
-}
 
 
 class LedgerChecksTest(unittest.TestCase):
@@ -19,96 +15,115 @@ class LedgerChecksTest(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        self.data = self.root / "2026-27"
+        self.data = self.root / '2026'
         self.data.mkdir()
+        for name, fields in SCHEMAS.items():
+            path = self.root / name if name in ('actuals.csv', 'projections.csv') else self.data / name
+            self.write(path, fields, [])
 
-    def run_tool(self, tool, *options):
-        command = [sys.executable, str(BIN / tool), str(self.data)]
-        if tool == "cashflow":
-            command += ["--cash-actuals", str(self.root / "actuals.csv"),
-                        "--projections", str(self.root / "projections.csv")]
-        result = subprocess.run(command + list(options), capture_output=True, text=True)
-        self.assertNotIn("Traceback", result.stderr)
+    def write(self, path, fields, rows):
+        with path.open('w', newline='') as stream:
+            writer = csv.DictWriter(stream, fieldnames=fields)
+            writer.writeheader()
+            writer.writerows(rows)
+
+    def ledger(self, name, **values):
+        self.write(self.data / name, SCHEMAS[name], [values])
+
+    def run_tool(self, tool, *args):
+        cmd = [sys.executable, str(BIN / tool), str(self.data), *args]
+        if tool == 'cashflow':
+            cmd += ['--cash-actuals', str(self.root / 'actuals.csv'), '--projections', str(self.root / 'projections.csv')]
+        result = subprocess.run(cmd, text=True, capture_output=True)
+        self.assertNotIn('Traceback', result.stderr)
         return result
 
-    def write_ledger(self, filename, recorded="2026-06-01", amount="12.50"):
-        date_field, money_field = LEDGERS[filename]
-        (self.data / filename).write_text(
-            f"{date_field},{money_field}\n{recorded},{amount}\n"
-        )
+    def test_calendar_boundaries(self):
+        for day, valid in [('2026-01-01', True), ('2026-12-31', True),
+                           ('2025-12-31', False), ('2027-01-01', False), ('2026-02-30', False)]:
+            self.ledger('income.csv', received_date=day, amount_usd='12.50')
+            for tool in ('summary', 'cashflow'):
+                result = self.run_tool(tool, '--check')
+                self.assertEqual(result.returncode, 0 if valid else 1, result.stderr)
 
-    def test_nonfinite_ledger_amounts_are_reported_without_tracebacks(self):
-        for tool in ("summary", "cashflow"):
-            for filename in LEDGERS:
-                for amount in ("NaN", "sNaN", "Infinity", "-Infinity"):
-                    with self.subTest(tool=tool, filename=filename, amount=amount):
-                        self.write_ledger(filename, amount=amount)
-                        result = self.run_tool(tool, "--check")
-                        self.assertEqual(result.returncode, 1)
-                        self.assertIn(f"{filename}:2: bad money", result.stderr)
-                        (self.data / filename).unlink()
-
-    def test_cashflow_opening_and_projection_nonfinite_amounts(self):
-        for amount in ("NaN", "sNaN", "Infinity", "-Infinity"):
-            with self.subTest(amount=amount):
-                result = self.run_tool("cashflow", "--check", f"--opening={amount}")
+    def test_unresolved_deductions_never_fall_back_to_full_cost(self):
+        for name in ('assets.csv', 'expenses.csv'):
+            self.ledger(name, paid_date='2026-06-01', total_usd='1000', claimable_usd='')
+            for tool in ('summary', 'cashflow'):
+                result = self.run_tool(tool)
                 self.assertEqual(result.returncode, 1)
-                self.assertIn("bad money in opening", result.stderr)
-                for filename in ("actuals.csv", "projections.csv"):
-                    path = self.root / filename
-                    path.write_text(f"date,amount_gbp\n2026-06-01,{amount}\n")
-                    result = self.run_tool("cashflow", "--check")
-                    self.assertEqual(result.returncode, 1)
-                    self.assertIn(f"{filename}:2: bad money", result.stderr)
-                    path.unlink()
-
-    def test_dates_must_belong_to_cash_basis_tax_year(self):
-        for tool in ("summary", "cashflow"):
-            for filename in LEDGERS:
-                for recorded in ("2026-04-05", "2027-04-06", "2026-02-30", "", "not-a-date"):
-                    with self.subTest(tool=tool, filename=filename, recorded=recorded):
-                        self.write_ledger(filename, recorded=recorded)
-                        result = self.run_tool(tool, "--check")
-                        self.assertEqual(result.returncode, 1)
-                        self.assertIn(f"{filename}:2:", result.stderr)
-                        (self.data / filename).unlink()
-
-    def test_tax_year_boundaries_and_normal_amounts_pass(self):
-        for recorded in ("2026-04-06", "2027-04-05"):
-            for filename in LEDGERS:
-                self.write_ledger(filename, recorded=recorded)
-            for tool in ("summary", "cashflow"):
-                result = self.run_tool(tool, "--check")
-                self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn("£12.50", result.stdout)
-
-    def test_non_tax_year_folders_do_not_apply_year_constraints(self):
-        for folder in ("fixture", "2026-28"):
-            self.data = self.root / folder
-            self.data.mkdir()
-            self.write_ledger("income.csv", recorded="2020-01-01")
-            for tool in ("summary", "cashflow"):
-                result = self.run_tool(tool, "--check")
-                self.assertEqual(result.returncode, 0, result.stderr)
-
-    def test_invoice_and_projection_dates_are_not_receipt_dates(self):
-        (self.data / "income.csv").write_text(
-            "received_date,invoice_date,amount_gbp\n2026-04-06,2026-03-01,12.50\n"
-        )
-        (self.root / "projections.csv").write_text(
-            "date,amount_gbp\n2027-05-01,20.00\n"
-        )
-        for tool in ("summary", "cashflow"):
-            result = self.run_tool(tool, "--check")
+                self.assertIn('unresolved deduction', result.stderr)
+            self.ledger(name, paid_date='2026-06-01', total_usd='1000', claimable_usd='0')
+            result = self.run_tool('summary', '--check')
             self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertRegex(result.stdout, r'Profit after reviewed deductions\s+\$0.00')
 
-    def test_warning_mode_still_reports_invalid_input(self):
-        self.write_ledger("income.csv", amount="NaN")
-        for tool in ("summary", "cashflow"):
-            result = self.run_tool(tool)
-            self.assertEqual(result.returncode, 0)
-            self.assertIn("bad money", result.stderr)
+    def test_nonfinite_money(self):
+        for name in ('income.csv', 'expenses.csv', 'assets.csv', 'tax-payments.csv', 'sales-tax.csv'):
+            for amount in ('NaN', 'sNaN', 'Infinity', '-Infinity'):
+                values = dict.fromkeys(SCHEMAS[name], '')
+                values.update(date='2026-06-01') if 'date' in values else values.update({SCHEMAS[name][0]: '2026-06-01'})
+                for field in ('amount_usd', 'total_usd', 'claimable_usd'):
+                    if field in values:
+                        values[field] = amount
+                self.ledger(name, **values)
+                for tool in ('summary', 'cashflow'):
+                    result = self.run_tool(tool, '--check')
+                    self.assertEqual(result.returncode, 1)
+                    self.assertIn('bad money', result.stderr)
+                self.write(self.data / name, SCHEMAS[name], [])
 
+    def test_tax_separation_and_cashflow_signs(self):
+        self.ledger('income.csv', received_date='2026-06-01', amount_usd='100')
+        self.ledger('tax-payments.csv', date='2026-06-01', authority='IRS', type='estimated', amount_usd='20')
+        rows = [dict(date='2026-06-01', type=kind, amount_usd=amount) for kind, amount in
+                [('collection', '10'), ('remittance', '6'), ('refund', '2')]]
+        self.write(self.data / 'sales-tax.csv', SCHEMAS['sales-tax.csv'], rows)
+        result = self.run_tool('summary', '--check')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertRegex(result.stdout, r'Profit after reviewed deductions\s+\$100.00')
+        result = self.run_tool('cashflow', '--check')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertRegex(result.stdout, r'Actual received\s+\$110.00')
+        self.assertRegex(result.stdout, r'Actual paid/spent\s+\$28.00')
 
-if __name__ == "__main__":
+    def test_missing_and_malformed_files_fail(self):
+        for tool in ('summary', 'cashflow'):
+            path = self.data / 'income.csv'
+            path.unlink()
+            result = self.run_tool(tool, '--check')
+            self.assertEqual(result.returncode, 1)
+            self.assertIn('missing ledger', result.stderr)
+            path.write_text('received_date,amount_gbp\n2026-01-01,1\n')
+            result = self.run_tool(tool, '--check')
+            self.assertEqual(result.returncode, 1)
+            self.assertIn('malformed schema', result.stderr)
+
+    def test_projection_dates_can_cross_year(self):
+        self.write(self.root / 'projections.csv', SCHEMAS['projections.csv'],
+                   [dict(date='2027-01-01', flow='income', status='projected', amount_usd='10')])
+        self.assertEqual(self.run_tool('cashflow', '--check').returncode, 0)
+
+    def test_actual_tax_duplicates_are_rejected(self):
+        self.write(self.root / 'actuals.csv', SCHEMAS['actuals.csv'],
+                   [dict(date='2026-06-01', flow='sales-tax', status='actual', amount_usd='10')])
+        result = self.run_tool('cashflow', '--check')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('dedicated tax ledgers', result.stderr)
+
+    def test_short_and_long_rows_fail_without_tracebacks(self):
+        for line in ('2026-06-01,income', '2026-06-01,income,actual,10,extra'):
+            (self.root / 'actuals.csv').write_text('date,flow,status,amount_usd\n' + line + '\n')
+            result = self.run_tool('cashflow', '--check')
+            self.assertEqual(result.returncode, 1)
+            self.assertIn('malformed row', result.stderr)
+
+    def test_nonfinite_opening_and_projections(self):
+        for value in ('NaN', 'Infinity'):
+            self.assertEqual(self.run_tool('cashflow', '--opening=' + value).returncode, 1)
+            self.write(self.root / 'projections.csv', SCHEMAS['projections.csv'],
+                       [dict(date='2027-01-01', flow='income', status='projected', amount_usd=value)])
+            self.assertEqual(self.run_tool('cashflow', '--check').returncode, 1)
+
+if __name__ == '__main__':
     unittest.main()

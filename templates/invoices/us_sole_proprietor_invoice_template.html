@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en-GB">
+<html lang="en-US">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -38,8 +38,8 @@
     }
 
     .page {
-      width: 210mm;
-      min-height: 297mm;
+      width: 215.9mm;
+      min-height: 279.4mm;
       margin: 24px auto;
       background: var(--paper);
       padding: 16mm 20mm 14mm;
@@ -329,13 +329,13 @@
       .page {
         margin: 0;
         width: auto;
-        min-height: 297mm;
+        min-height: 279.4mm;
         box-shadow: none;
         padding: 12mm;
       }
 
       @page {
-        size: A4;
+        size: letter;
         margin: 0;
       }
     }
@@ -349,8 +349,8 @@
         <p><strong><span class="placeholder">Your legal name</span></strong></p>
         <p class="muted">Trading as <span class="placeholder">Your trading name</span></p>
         <p><span class="placeholder">Address line 1</span></p>
-        <p><span class="placeholder">Town and postcode</span></p>
-        <p><span class="placeholder">UK</span></p>
+        <p><span class="placeholder">City, State ZIP</span></p>
+        <p><span class="placeholder">United States</span></p>
         <p><span class="placeholder">you@example.com</span> | <span class="placeholder">Your phone</span></p>
       </div>
 
@@ -381,7 +381,7 @@
         <h2>Invoice to</h2>
         <div class="invoice-address">
           <p><strong><span class="placeholder">Client Name / Business Name</span></strong></p>
-          <p class="address-line"><span class="placeholder">Client Address Line 1</span>, <span class="placeholder">Client Address Line 2</span>, <span class="placeholder">Town/City, Postcode</span></p>
+          <p class="address-line"><span class="placeholder">Client Address Line 1</span>, <span class="placeholder">Client Address Line 2</span>, <span class="placeholder">City, State ZIP</span></p>
           <p><span class="placeholder">Client Email, if useful</span></p>
         </div>
       </div>
@@ -412,8 +412,8 @@
             <span class="muted"><span class="placeholder">Brief description of the work delivered, project name, dates, or agreed scope</span></span>
           </td>
           <td class="num"><span class="placeholder">1</span></td>
-          <td class="num">£<span class="placeholder">0.00</span></td>
-          <td class="num">£<span class="placeholder">0.00</span></td>
+          <td class="num">$<span class="placeholder">0.00</span></td>
+          <td class="num">$<span class="placeholder">0.00</span></td>
         </tr>
         <tr>
           <td>
@@ -421,8 +421,8 @@
             <span class="muted"><span class="placeholder">Delete this row if not needed</span></span>
           </td>
           <td class="num"><span class="placeholder">1</span></td>
-          <td class="num">£<span class="placeholder">0.00</span></td>
-          <td class="num">£<span class="placeholder">0.00</span></td>
+          <td class="num">$<span class="placeholder">0.00</span></td>
+          <td class="num">$<span class="placeholder">0.00</span></td>
         </tr>
       </tbody>
     </table>
@@ -430,28 +430,26 @@
     <table class="totals">
       <tr>
         <td>Subtotal</td>
-        <td>£<span class="placeholder">0.00</span></td>
+        <td>$<span class="placeholder">0.00</span></td>
       </tr>
       <tr>
-        <td>VAT</td>
-        <td>£0.00</td>
+        <td>Sales tax (confirm jurisdiction and rate)</td>
+        <td><span class="placeholder">To be confirmed</span></td>
       </tr>
       <tr class="grand">
         <td>Total due</td>
-        <td>£<span class="placeholder">0.00</span></td>
+        <td>$<span class="placeholder">0.00</span></td>
       </tr>
     </table>
 
     <div class="note">
-      <strong>VAT note:</strong> I am not VAT registered. No VAT has been charged on this invoice.
+      <strong>Draft:</strong> Confirm sales-tax treatment and any required local invoice details before issue. State the verified jurisdiction, rate and tax amount, or the applicable reason no tax is charged.
     </div>
 
     <section class="payment">
       <div>
-        <h2>Bank transfer details</h2>
-        <p>Account name: <strong><span class="placeholder">Account name</span></strong></p>
-        <p>Sort code: <span class="placeholder">00-00-00</span></p>
-        <p>Account number: <span class="placeholder">00000000</span></p>
+        <h2>Payment instructions</h2>
+        <p><span class="placeholder">Provide secure payment instructions separately.</span></p>
         <p>Payment reference: <strong><span class="placeholder">INV-0001</span></strong></p>
       </div>
 
@@ -462,7 +460,7 @@
     </section>
 
     <footer class="footer">
-      <p>Sole trader invoice issued by <span class="placeholder">Your legal name</span>. Keep a copy of this invoice for your records.</p>
+      <p>Sole proprietor invoice issued by <span class="placeholder">Your legal name</span>. Keep a copy of this invoice for your records.</p>
     </footer>
   </main>
 </body>

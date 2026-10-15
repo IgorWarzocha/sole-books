@@ -14,18 +14,18 @@ SUMMARY = runpy.run_path(str(ROOT / "bin/summary"))
 
 def generate(data_dir, output_dir):
     months = set()
-    totals = {name: {} for name in ("Income", "Operating expenses", "Equipment")}
+    totals = {name: {} for name in ("Income", "Operating expenses", "Reviewed asset deductions")}
     suppliers = {}
     errors = []
     for filename, label, date_field, fields in (
-        ("income.csv", "Income", "received_date", ["amount_gbp"]),
-        ("expenses.csv", "Operating expenses", "paid_date", ["claimable_gbp", "total_gbp"]),
-        ("assets.csv", "Equipment", "paid_date", ["claimable_gbp", "total_gbp"]),
+        ("income.csv", "Income", "received_date", ["amount_usd"]),
+        ("expenses.csv", "Operating expenses", "paid_date", ["claimable_usd"]),
+        ("assets.csv", "Reviewed asset deductions", "paid_date", ["claimable_usd"]),
     ):
         path = data_dir / filename
         if not path.is_file():
             raise ValueError(f"Missing source ledger: {path}")
-        for number, row in enumerate(SUMMARY["read_rows"](path), 2):
+        for number, row in enumerate(SUMMARY["read_rows"](path, errors), 2):
             month = date.fromisoformat(row[date_field]).strftime("%Y-%m")
             field = next((f for f in fields if (row.get(f) or "").strip()), fields[-1])
             amount = SUMMARY["money"](row.get(field), path, number, field, errors)
@@ -42,16 +42,16 @@ def generate(data_dir, output_dir):
         raise ValueError("\n".join(errors))
 
     months = sorted(months)
-    totals["Rough profit after equipment"] = {
+    totals["Profit after reviewed asset deductions"] = {
         month: totals["Income"].get(month, Decimal("0"))
         - totals["Operating expenses"].get(month, Decimal("0"))
-        - totals["Equipment"].get(month, Decimal("0"))
+        - totals["Reviewed asset deductions"].get(month, Decimal("0"))
         for month in months
     }
     output_dir.mkdir(parents=True, exist_ok=True)
     for filename, heading, groups in (
-        ("monthly-ledger.csv", "Tax-ledger measure (GBP)", totals),
-        ("expenses-by-supplier.csv", "Supplier (claimed GBP)", dict(sorted(suppliers.items()))),
+        ("monthly-ledger.csv", "Tax-ledger measure (USD)", totals),
+        ("expenses-by-supplier.csv", "Supplier (claimed USD)", dict(sorted(suppliers.items()))),
     ):
         with (output_dir / filename).open("w", newline="", encoding="utf-8") as stream:
             writer = csv.writer(stream)
@@ -65,12 +65,12 @@ def generate(data_dir, output_dir):
         ("Expenses by supplier", output_dir / "expenses-by-supplier.csv", "Claimed operating expenses by supplier and month."),
         ("Income", data_dir / "income.csv", "Original receipts, invoice references and evidence paths."),
         ("Expenses", data_dir / "expenses.csv", "Original payments, business shares and evidence paths."),
-        ("Equipment", data_dir / "assets.csv", "Original assets and claimed business amounts."),
+        ("Reviewed asset deductions", data_dir / "assets.csv", "Original assets and reviewed current-year deductions."),
         ("Expense candidates", data_dir / "expense-candidates.csv", "Unresolved items, excluded from these totals."),
-        ("HMRC payments", data_dir / "hmrc.csv", "Payments to HMRC, separate from profit."),
+        ("Tax payments", data_dir / "tax-payments.csv", "Owner income-tax payments, separate from profit."),
         ("Cashflow projections", ROOT / "cashflow/projections.csv", "Expected and scheduled movements, not received income."),
         ("Cashflow actuals", ROOT / "cashflow/actuals.csv", "Additional cash movements, including finance repayments."),
-        ("Universal Credit periods", ROOT / "universal-credit/assessment-periods.csv", "Separate assessment-period figures and submission status."),
+        ("Sales tax", data_dir / "sales-tax.csv", "Government-held collections, remittances and customer refunds, excluded from profit."),
     ]
     generated = datetime.now().astimezone().isoformat(timespec="seconds")
     text = f"""# Ledger desk: {data_dir.name}
@@ -87,9 +87,9 @@ Open a CSV below and select **Preview** in Amp to see its table. Select **Source
 ## What these views mean
 
 - The first two CSVs are generated snapshots, not editable source ledgers. Generated at **{generated}**.
-- All amounts are GBP. Months follow the dates recorded in the tax ledgers. Zero means no recorded amount, not a reconciled or completed month.
-- Expenses and equipment use the recorded claimable amount, falling back to the total only when claimable is blank. Personal shares are not deducted again.
-- Rough profit matches the approach in `make summary`: income minus operating expenses minus equipment. It is not a tax bill, bank balance or UC earnings figure.
+- All amounts are USD. Months follow the dates recorded in the tax ledgers. Zero means no recorded amount, not a reconciled or completed month.
+- Expenses and assets require an explicit reviewed claimable amount, including zero; full purchase cost is never an automatic deduction.
+- Profit after reviewed deductions matches the approach in `make summary`: income minus operating expenses minus reviewed asset deductions. It is not a tax bill or bank balance.
 - Non-cash ledger items and financed equipment remain in this tax view. Future receipts and finance repayments are not added to it.
 - The original CSVs remain the source of truth. Their links open the source files rather than copies.
 

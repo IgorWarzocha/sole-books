@@ -12,8 +12,6 @@ function ledgerLive() {
       (rel.startsWith(`data${path.sep}`) && rel.endsWith(".csv"))
       || (rel.startsWith(`cashflow${path.sep}`) && rel.endsWith(".csv"))
       || rel === "todo.md"
-      || rel === path.join("universal-credit", "assessment-periods.csv")
-      || rel === path.join("universal-credit", "rates.csv")
       || rel === "trader.csv"
     );
   };
@@ -22,8 +20,8 @@ function ledgerLive() {
     const dataDir = path.join(repo, "data");
     if (fs.existsSync(dataDir)) {
       for (const year of fs.readdirSync(dataDir)) {
-        if (!/^\d{4}-\d{2}$/.test(year)) continue;
-        for (const name of ["income", "expenses", "documents"]) {
+        if (!/^\d{4}$/.test(year)) continue;
+        for (const name of ["income", "expenses", "documents", "sales-tax"]) {
           const file = path.join(dataDir, year, `${name}.csv`);
           if (fs.existsSync(file)) files[`data/${year}/${name}.csv`] = fs.readFileSync(file, "utf8");
         }
@@ -32,14 +30,6 @@ function ledgerLive() {
     for (const name of ["projections", "actuals", "ongoing-costs", "cost-changes"]) {
       files[`cashflow/${name}.csv`] = fs.readFileSync(path.join(repo, "cashflow", `${name}.csv`), "utf8");
     }
-    files["universal-credit/assessment-periods.csv"] = fs.readFileSync(
-      path.join(repo, "universal-credit", "assessment-periods.csv"),
-      "utf8",
-    );
-    files["universal-credit/rates.csv"] = fs.readFileSync(
-      path.join(repo, "universal-credit", "rates.csv"),
-      "utf8",
-    );
     const trader = path.join(repo, "trader.csv");
     files["trader.csv"] = fs.existsSync(trader) ? fs.readFileSync(trader, "utf8") : "";
     files["todo.md"] = fs.readFileSync(path.join(repo, "todo.md"), "utf8");
@@ -52,8 +42,6 @@ function ledgerLive() {
         path.join(repo, "data"),
         path.join(repo, "cashflow"),
         path.join(repo, "todo.md"),
-        path.join(repo, "universal-credit", "assessment-periods.csv"),
-        path.join(repo, "universal-credit", "rates.csv"),
         path.join(repo, "trader.csv"),
       ]);
       let timer;

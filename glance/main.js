@@ -1,6 +1,6 @@
 import "./style.css";
 import { parseCsv } from "./csv.js";
-import { calculatePeriods, paymentRows } from "./uc.js";
+import { cents, usd, today, calendarYear, monthStart, addMonth, dayCount, expandOngoing, invoiceSummary, forecastRows } from "./calendar.js";
 
 let sources = {};
 
@@ -19,72 +19,21 @@ function esc(value) {
 }
 
 
-function pence(value) {
-  const amount = Number(String(value ?? "").trim().replace(/,/g, ""));
-  if (!Number.isFinite(amount)) throw new Error("Missing or invalid money value");
-  return Math.round(amount * 100);
-}
-
-function gbp(amount, compact = false) {
-  const negative = amount < 0;
-  const pounds = Math.abs(amount) / 100;
-  const text = compact
-    ? `£${Math.round(pounds).toLocaleString("en-GB")}`
-    : `£${pounds.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  return negative ? `−${text}` : text;
-}
-
-function londonToday() {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/London",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
-  const get = (type) => parts.find((part) => part.type === type).value;
-  return `${get("year")}-${get("month")}-${get("day")}`;
-}
-
-function taxYear(asOf) {
-  const [year, month, day] = asOf.split("-").map(Number);
-  const start = month > 4 || (month === 4 && day >= 6) ? year : year - 1;
-  return `${start}-${String(start + 1).slice(-2)}`;
-}
-
-function monthStart(iso) {
-  return `${iso.slice(0, 7)}-01`;
-}
-
-function addMonth(iso) {
-  const [year, month] = iso.split("-").map(Number);
-  const next = new Date(Date.UTC(year, month, 1));
-  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}-01`;
-}
-
-
-function dayCount(from, to) {
-  const a = Date.parse(`${from}T00:00:00Z`);
-  const b = Date.parse(`${to}T00:00:00Z`);
-  return Math.round((b - a) / 86400000);
-}
-
 function monthName(iso) {
   return MONTHS[Number(iso.slice(5, 7)) - 1];
 }
 
 function fullMonth(iso) {
-  return new Intl.DateTimeFormat("en-GB", { month: "long", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));
+  return new Intl.DateTimeFormat("en-US", { month: "long", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));
 }
 
 function shortLabel(text) {
   const low = text.toLowerCase();
   const labels = [
-    [["jobcentre", "work coach"], "Jobcentre review"],
-    [["dwp statement"], "Check DWP statement"],
-    [["tax estimate", "hmrc estimate"], "Refresh tax estimate"],
+    [["tax estimate"], "Refresh tax estimate"],
     [["reconcile"], "Reconcile records"],
     [["make summary", "ledger summary"], "Run ledger summary"],
-    [["self assessment", "prepare the return"], "Prepare tax return"],
+    [["prepare the return"], "Prepare tax return"],
     [["file the return"], "File tax return"],
   ];
   for (const [terms, label] of labels) {
@@ -105,34 +54,34 @@ function rowsOf(text, fields, dateField, amountField) {
     for (const field of fields) {
       if (!(field in row)) throw new Error(`Missing column ${field}`);
     }
-    return { ...row, when: row[dateField] || null, amount: pence(row[amountField]) };
+    return { ...row, when: row[dateField] || null, amount: cents(row[amountField]) };
   });
 }
 
 function load(asOf, year) {
   const income = rowsOf(
     fileText(`/${year}/income.csv`),
-    ["received_date", "amount_gbp", "client", "invoice_no", "account"],
+    ["received_date", "amount_usd", "client", "invoice_no", "account"],
     "received_date",
-    "amount_gbp",
+    "amount_usd",
   ).filter((row) => {
     if (!row.when) throw new Error("income.csv: missing date");
     return row.when <= asOf;
   });
   const expenses = rowsOf(
     fileText(`/${year}/expenses.csv`),
-    ["paid_date", "claimable_gbp", "category"],
+    ["paid_date", "claimable_usd", "category"],
     "paid_date",
-    "claimable_gbp",
+    "claimable_usd",
   ).filter((row) => {
     if (!row.when) throw new Error("expenses.csv: missing date");
     return row.when <= asOf;
   });
   const documentRows = rowsOf(
     fileText(`/${year}/documents.csv`),
-    ["date", "type", "number", "amount_gbp", "status"],
+    ["date", "type", "number", "amount_usd", "status"],
     "date",
-    "amount_gbp",
+    "amount_usd",
   );
   for (const row of documentRows) {
     if (!row.when) throw new Error("documents.csv: missing date");
@@ -141,18 +90,19 @@ function load(asOf, year) {
   const drafts = documentRows.filter((row) => row.type.toLowerCase() === "invoice" && row.status.toLowerCase() === "draft");
   const projections = rowsOf(
     fileText("/projections.csv"),
-    ["date", "status", "flow", "description", "amount_gbp"],
+    ["date", "status", "flow", "description", "amount_usd"],
     "date",
-    "amount_gbp",
+    "amount_usd",
   ).filter((row) => FORECASTS.has(row.status.toLowerCase()));
   const financing = rowsOf(
     fileText("/actuals.csv"),
-    ["date", "flow", "status", "amount_gbp"],
+    ["date", "flow", "status", "amount_usd"],
     "date",
-    "amount_gbp",
+    "amount_usd",
   ).filter((row) => row.when && row.when <= asOf && row.flow.toLowerCase() === "financing" && row.status.toLowerCase() === "actual")
     .map((row) => ({ ...row, amount: Math.abs(row.amount) }));
-  return { income, expenses, documents, drafts, projections, financing };
+  const salesTax = rowsOf(fileText(`/${year}/sales-tax.csv`), ["date", "type", "invoice_no", "amount_usd"], "date", "amount_usd").filter((row) => row.when && row.when <= asOf);
+  return { income, expenses, documents, drafts, projections, financing, salesTax };
 }
 
 function tradingName() {
@@ -162,16 +112,6 @@ function tradingName() {
   return name;
 }
 
-function ucPreference(hasPeriods) {
-  try {
-    const stored = localStorage.getItem("glance-uc");
-    if (stored === null) return hasPeriods;
-    return stored === "1";
-  } catch {
-    return hasPeriods;
-  }
-}
-
 function openTasks() {
   return (sources["todo.md"] || "").split("\n").flatMap((line) => {
     const match = line.trim().match(/^- \[ \] (.+)$/);
@@ -179,23 +119,8 @@ function openTasks() {
   });
 }
 
-function invoiceSummary(documents, income) {
-  const invoices = documents.filter((row) => row.type.toLowerCase() === "invoice" && !["cancelled", "void", "draft"].includes(row.status.toLowerCase()));
-  let paid = 0;
-  let outstanding = 0;
-  for (const row of invoices) {
-    const receipts = income.filter((item) => item.invoice_no === row.number).reduce((sum, item) => sum + item.amount, 0);
-    const remaining = row.status.toLowerCase() === "paid" ? 0 : Math.max(0, row.amount - receipts);
-    outstanding += remaining;
-    if (remaining === 0) paid += 1;
-  }
-  return { invoices, paid, outstanding };
-}
-
 function comingUp(tasks, projections, asOf) {
-  const events = parseCsv(fileText("/assessment-periods.csv"))
-    .filter((row) => row.report_deadline && ["prepared", "projected"].includes(row.status))
-    .map((row) => ({ when: row.report_deadline, label: "UC report", note: "Check account task", amount: null, kind: "task" }));
+  const events = [];
   const undated = [];
   for (const text of tasks) {
     const dates = [...text.matchAll(/\d{4}-\d{2}-\d{2}/g)].map((match) => match[0]).filter((when) => when >= asOf);
@@ -230,73 +155,24 @@ function expectedCaption(pipeline) {
   return `${months[0]} – ${months.at(-1)}`;
 }
 
-function ucPeriods() {
-  return calculatePeriods(parseCsv(fileText("/assessment-periods.csv")), parseCsv(fileText("/rates.csv")));
-}
-
-function universalCredit(asOf, year) {
-  const start = Number(year.slice(0, 4));
-  return paymentRows(ucPeriods(), asOf, true, { from: `${start}-04-06`, to: `${start + 1}-04-05` });
-}
-
 function sumMonth(rows, month) {
   return rows.filter((row) => monthStart(row.when) === month).reduce((sum, row) => sum + row.amount, 0);
 }
 
 
-function expandOngoing(asOf, year) {
-  const rows = parseCsv(fileText("/ongoing-costs.csv"));
+function chart(income, expenses, financing, projections, asOf, year) {
   const startYear = Number(year.slice(0, 4));
-  const last = `${startYear + 1}-04-05`;
-  const forecasts = [];
-  for (const row of rows) {
-    const day = Number(String(row.billing_day).trim());
-    if (!Number.isInteger(day) || day < 1 || day > 28) throw new Error("Unsupported billing day");
-    const amount = pence(row.amount_gbp);
-    const from = row.effective_from;
-    let cursor = monthStart(asOf > from ? asOf : from);
-    while (cursor <= last) {
-      const when = `${cursor.slice(0, 8)}${String(day).padStart(2, "0")}`;
-      if (when > asOf && when >= from && when <= last) {
-        forecasts.push({
-          when,
-          flow: "expense",
-          status: "recurring",
-          description: row.description,
-          amount,
-        });
-      }
-      cursor = addMonth(cursor);
-    }
-  }
-  return forecasts;
-}
-
-function ucForecasts(asOf) {
-  return paymentRows(ucPeriods(), asOf, false);
-}
-
-function chart(income, expenses, financing, uc, projections, asOf, year, includeUc) {
-  const startYear = Number(year.slice(0, 4));
-  let cursor = `${startYear}-04-01`;
+  let cursor = `${startYear}-01-01`;
   const current = monthStart(asOf);
-  const end = `${startYear + 1}-03-01`;
+  const end = `${startYear}-12-01`;
   const dated = projections.filter((row) => row.when && monthStart(row.when) <= end);
   let horizon = dated.reduce((latest, row) => {
     const month = monthStart(row.when);
     return month > latest ? month : latest;
   }, current);
-  const ucGhostRows = includeUc ? ucForecasts(asOf) : [];
-  for (const row of ucGhostRows) {
-    const month = monthStart(row.when);
-    if (month <= end && month > horizon) horizon = month;
-  }
   const ghostOf = (flow, month) => projections
     .filter((row) => row.when && monthStart(row.when) === month && row.flow.toLowerCase() === flow)
     .reduce((sum, row) => sum + Math.abs(row.amount), 0);
-  const ghostUc = (month) => ucGhostRows
-    .filter((row) => monthStart(row.when) === month)
-    .reduce((sum, row) => sum + row.amount, 0);
   const months = [];
   while (cursor <= horizon && cursor <= end) {
     months.push([
@@ -304,20 +180,17 @@ function chart(income, expenses, financing, uc, projections, asOf, year, include
       sumMonth(income, cursor),
       sumMonth(expenses, cursor),
       sumMonth(financing, cursor),
-      includeUc ? sumMonth(uc, cursor) : 0,
       ghostOf("income", cursor),
       ghostOf("expense", cursor),
       ghostOf("financing", cursor),
-      ghostUc(cursor),
     ]);
     cursor = addMonth(cursor);
   }
-  if (!months.length) return '<p class="empty">No months in this tax year yet.</p>';
-  const peak = Math.max(...months.map(([, incoming, outgoing, credit, benefit, ghostIn, ghostCost, ghostCredit, ghostBenefit]) => Math.max(
+  if (!months.length) return '<p class="empty">No months in this calendar year yet.</p>';
+  const peak = Math.max(...months.map(([, incoming, outgoing, credit, ghostIn, ghostCost, ghostCredit]) => Math.max(
     incoming + ghostIn,
     outgoing + ghostCost,
     credit + ghostCredit,
-    benefit + ghostBenefit,
   ))) || 1;
   const scale = Math.round(peak * 1.12);
   const height = (amount) => `${(amount / scale) * 100}%`;
@@ -326,21 +199,18 @@ function chart(income, expenses, financing, uc, projections, asOf, year, include
     const pale = ghost ? `<i class="${base} ghost" style="height:${height(ghost)}"></i>` : "";
     return `<span class="stack">${solid}${pale}</span>`;
   };
-  const bars = months.map(([when, incoming, outgoing, credit, benefit, ghostIn, ghostCost, ghostCredit, ghostBenefit]) => {
+  const bars = months.map(([when, incoming, outgoing, credit, ghostIn, ghostCost, ghostCredit]) => {
     const name = monthName(when);
     const selected = monthStart(when) === current;
     const shownIn = incoming || ghostIn;
     const shownCost = outgoing || ghostCost;
     const shownCredit = credit || ghostCredit;
-    const shownUc = benefit || ghostBenefit;
-    const label = `${name}: received ${gbp(shownIn)}, operating costs ${gbp(shownCost)}, credit payments ${gbp(shownCredit)}${includeUc ? `, Universal Credit ${gbp(shownUc)}` : ""}`;
-    const ucStack = includeUc ? stack("uc-bar", benefit, ghostBenefit) : "";
-    return `<button class="month${selected ? " selected" : ""}" type="button" aria-pressed="${selected}" aria-label="${esc(label)}" data-month="${name}" data-income="${gbp(shownIn + (includeUc ? benefit : 0))}" data-cost="${gbp(shownCost)}" data-credit="${gbp(shownCredit)}" data-uc="${gbp(shownUc)}"><span class="bar-pair${includeUc ? " with-uc" : ""}" aria-hidden="true">${stack("income-bar", incoming, ghostIn)}${ucStack}${stack("cost-bar", outgoing, ghostCost)}${stack("credit-bar", credit, ghostCredit)}</span><span>${name}</span></button>`;
+    const label = `${name}: received ${usd(shownIn)}, operating costs ${usd(shownCost)}, credit payments ${usd(shownCredit)}`;
+    return `<button class="month${selected ? " selected" : ""}" type="button" aria-pressed="${selected}" aria-label="${esc(label)}" data-month="${name}" data-income="${usd(shownIn)}" data-cost="${usd(shownCost)}" data-credit="${usd(shownCredit)}"><span class="bar-pair" aria-hidden="true">${stack("income-bar", incoming, ghostIn)}${stack("cost-bar", outgoing, ghostCost)}${stack("credit-bar", credit, ghostCredit)}</span><span>${name}</span></button>`;
   });
   const currentMonth = months.find(([when]) => monthStart(when) === current) || months.at(-1);
-  const [, incoming, outgoing, credit, benefit, ghostIn, ghostCost, ghostCredit, ghostBenefit] = currentMonth;
-  const ucReadout = includeUc ? `<span><i class="dot uc"></i><span id="selected-uc">${gbp(benefit || ghostBenefit)}</span></span>` : "";
-  return `<div class="plot"><div class="axis" aria-hidden="true"><span>${gbp(scale, true)}</span><span>${gbp(Math.round(scale / 2), true)}</span><span>£0</span></div><div class="months">${bars.join("")}</div></div><div class="chart-readout" aria-live="polite"><strong id="selected-month">${monthName(currentMonth[0])}</strong><span><i class="dot green"></i><span id="selected-income">${gbp((incoming || ghostIn) + (includeUc ? benefit : 0))}</span></span>${ucReadout}<span><i class="dot coral"></i><span id="selected-cost">${gbp(outgoing || ghostCost)}</span></span><span><i class="dot"></i><span id="selected-credit">${gbp(credit || ghostCredit)}</span></span></div>`;
+  const [, incoming, outgoing, credit, ghostIn, ghostCost, ghostCredit] = currentMonth;
+  return `<div class="plot"><div class="axis" aria-hidden="true"><span>${usd(scale, true)}</span><span>${usd(Math.round(scale / 2), true)}</span><span>$0</span></div><div class="months">${bars.join("")}</div></div><div class="chart-readout" aria-live="polite"><strong id="selected-month">${monthName(currentMonth[0])}</strong><span><i class="dot green"></i><span id="selected-income">${usd(incoming || ghostIn)}</span></span><span><i class="dot coral"></i><span id="selected-cost">${usd(outgoing || ghostCost)}</span></span><span><i class="dot"></i><span id="selected-credit">${usd(credit || ghostCredit)}</span></span></div>`;
 }
 
 function eventHtml(event, asOf) {
@@ -348,7 +218,7 @@ function eventHtml(event, asOf) {
   const due = days === 0 ? "Today" : `${Math.abs(days)}d ${days < 0 ? "past" : "away"}`;
   const value = event.amount == null
     ? (/^\d{1,2}:\d{2}$/.test(event.note) ? event.note : "Due")
-    : `${event.amount > 0 ? "+" : "−"}${gbp(Math.abs(event.amount), true)}`;
+    : `${event.amount > 0 ? "+" : "−"}${usd(Math.abs(event.amount), true)}`;
   return `<li class="event ${event.kind}${days < 0 ? " overdue" : ""}" title="${esc(event.note)}"><time datetime="${event.when}"><b>${event.when.slice(8, 10)}</b><span>${monthName(event.when)}</span></time><div class="event-body"><strong>${esc(event.label)}</strong><small>${esc(event.note)}</small></div><div class="event-value"><strong>${esc(value)}</strong><small>${due}</small></div></li>`;
 }
 
@@ -373,16 +243,6 @@ function installControls() {
   if (app.dataset.bound) return;
   app.dataset.bound = "1";
   app.addEventListener("click", (event) => {
-    const toggle = event.target.closest(".uc-toggle button");
-    if (toggle) {
-      try {
-        localStorage.setItem("glance-uc", toggle.getAttribute("aria-pressed") === "true" ? "0" : "1");
-      } catch {
-        // The toggle still redraws for this page load.
-      }
-      render();
-      return;
-    }
     const button = event.target.closest(".month");
     if (!button) return;
     document.querySelectorAll(".month").forEach((item) => {
@@ -394,8 +254,6 @@ function installControls() {
     document.getElementById("selected-income").textContent = button.dataset.income;
     document.getElementById("selected-cost").textContent = button.dataset.cost;
     document.getElementById("selected-credit").textContent = button.dataset.credit;
-    const uc = document.getElementById("selected-uc");
-    if (uc) uc.textContent = button.dataset.uc;
   });
 }
 
@@ -427,36 +285,33 @@ function patch(html) {
 function render() {
   const app = document.querySelector("#app");
   try {
-    const asOf = londonToday();
-    const year = taxYear(asOf);
-    const { income, expenses, documents, drafts, projections, financing } = load(asOf, year);
-    const forecast = projections.concat(expandOngoing(asOf, year));
+    const trader = parseCsv(sources["trader.csv"] || "")[0];
+    const timeZone = trader?.time_zone?.trim() || "UTC";
+    const asOf = today(new Date(), timeZone);
+    const year = calendarYear(asOf);
+    const { income, expenses, documents, drafts, projections, financing, salesTax } = load(asOf, year);
+    const forecast = forecastRows(projections, asOf, year).concat(expandOngoing(parseCsv(fileText("/ongoing-costs.csv")), asOf, year));
     const cash = income.filter((row) => !NONCASH.some((term) => row.account.toLowerCase().includes(term)));
-    const hasPeriods = parseCsv(fileText("/assessment-periods.csv")).some((row) => row.period_end);
-    const includeUc = ucPreference(hasPeriods);
-    const uc = universalCredit(asOf, year);
-    const ucTotal = includeUc ? uc.reduce((sum, row) => sum + row.amount, 0) : 0;
     const receivedCash = cash.reduce((sum, row) => sum + row.amount, 0);
-    const received = receivedCash + ucTotal;
+    const received = receivedCash;
     const costs = expenses.reduce((sum, row) => sum + row.amount, 0);
-    const { invoices, paid, outstanding } = invoiceSummary(documents, income);
+    const { invoices, paid, outstanding } = invoiceSummary(documents, income, salesTax);
     const invoiceTotal = invoices.reduce((sum, row) => sum + row.amount, 0);
     const pipeline = projections.filter((row) => row.flow.toLowerCase() === "income" && row.status.toLowerCase() !== "issued");
     const expected = pipeline.reduce((sum, row) => sum + row.amount, 0);
     const [events, undated] = comingUp(openTasks(), forecast, asOf);
-    const priorities = ["Check DWP statement", "Refresh tax estimate", "Reconcile records"];
+    const priorities = [ "Refresh tax estimate", "Reconcile records"];
     undated.sort((a, b) => (priorities.includes(a) ? priorities.indexOf(a) : priorities.length) - (priorities.includes(b) ? priorities.indexOf(b) : priorities.length));
     const thisMonthCash = cash.filter((row) => monthStart(row.when) === monthStart(asOf)).reduce((sum, row) => sum + row.amount, 0);
-    const thisMonthUc = includeUc ? uc.filter((row) => monthStart(row.when) === monthStart(asOf)).reduce((sum, row) => sum + row.amount, 0) : 0;
-    const thisMonth = thisMonthCash + thisMonthUc;
+    const thisMonth = thisMonthCash;
     const ratio = invoices.length ? (paid / invoices.length) * 100 : 0;
-    const projects = pipeline.map((row) => `<li class="project"><span>${esc(shortLabel(row.description))}</span><strong>${gbp(row.amount, true)}</strong></li>`).join("");
+    const projects = pipeline.map((row) => `<li class="project"><span>${esc(shortLabel(row.description))}</span><strong>${usd(row.amount, true)}</strong></li>`).join("");
     const segments = pipeline.map((row) => `<i style="flex:${Math.max(row.amount, 0)}"></i>`).join("");
     const actions = undated.slice(0, 3).map((label) => `<li>${esc(label)}</li>`).join("") || "<li>No undated tasks.</li>";
     const more = undated.length > 3
       ? `<details><summary>${undated.length - 3} more admin items</summary><ul class="actions">${undated.slice(3).map((label) => `<li>${esc(label)}</li>`).join("")}</ul></details>`
       : "";
-    const sparkRows = includeUc ? cash.concat(uc) : cash;
+    const sparkRows = cash;
     const bare = !income.length && !expenses.length && !documents.length && !drafts.length && !projections.length;
     const name = tradingName();
     document.title = `${name} · Books`;
@@ -467,20 +322,20 @@ function render() {
       ? `<p class="empty">Nothing recorded yet. These ledgers are empty on purpose. Add a row under data/${esc(year)} and this page fills in.</p>`
       : "";
     const html = `<main>
-<header><div><h1>${esc(name)} <span>/ books</span></h1><small>Tax year ${esc(year)}</small></div>
-<div class="header-tools"><label class="uc-toggle"><button type="button" aria-pressed="${includeUc}" aria-label="Include Universal Credit"><i></i></button>UC</label></div></header>
-<section class="hero" aria-label="Cash received"><div><h2>Money received</h2><p class="total">${gbp(received)}</p></div>
-<div class="hero-side"><small>${fullMonth(asOf)} so far</small><strong>${gbp(thisMonth, true)}</strong>${sparkline(sparkRows)}</div></section>
+<header><div><h1>${esc(name)} <span>/ books</span></h1><small>Calendar year ${esc(year)} · USD · ${esc(timeZone)}</small></div>
+</header>
+<section class="hero" aria-label="Cash received"><div><h2>Money received</h2><p class="total">${usd(received)}</p></div>
+<div class="hero-side"><small>${fullMonth(asOf)} so far</small><strong>${usd(thisMonth, true)}</strong>${sparkline(sparkRows)}</div></section>
 ${emptyNote}
-<section class="metrics" aria-label="Key figures"><article class="metric"><h2>Unpaid invoices</h2><strong>${gbp(outstanding, true)}</strong><small>${!invoices.length ? "Nothing issued" : outstanding === 0 ? "All settled" : "Still to collect"}</small></article>
-<article class="metric pipeline"><h2>Expected income</h2><strong>${gbp(expected, true)}</strong><small>${esc(expectedCaption(pipeline))}</small></article>
-<article class="metric costs" title="${gbp(costs)}"><h2>Operating costs</h2><strong>${gbp(costs, true)}</strong><small>${esc(year)} to date</small></article></section>
+<section class="metrics" aria-label="Key figures"><article class="metric"><h2>Unpaid invoices</h2><strong>${usd(outstanding, true)}</strong><small>${!invoices.length ? "Nothing issued" : outstanding === 0 ? "All settled" : "Still to collect"}</small></article>
+<article class="metric pipeline"><h2>Expected income</h2><strong>${usd(expected, true)}</strong><small>${esc(expectedCaption(pipeline))}</small></article>
+<article class="metric costs" title="${usd(costs)}"><h2>Operating costs</h2><strong>${usd(costs, true)}</strong><small>${esc(year)} to date</small></article></section>
 <div class="board"><section class="panel chart"><div class="panel-head"><h2>Income & operating costs</h2><small>${esc(year)}</small></div>
-<div class="legend"><span><i class="dot green"></i>Cash received</span>${includeUc ? '<span><i class="dot uc"></i>Universal Credit</span>' : ""}<span><i class="dot coral"></i>Business costs</span><span><i class="dot"></i>Credit payments</span><span><i class="dot ghost"></i>Projected</span></div>
-${chart(cash, expenses, financing, uc, forecast, asOf, year, includeUc)}</section>
+<div class="legend"><span><i class="dot green"></i>Cash received</span><span><i class="dot coral"></i>Business costs</span><span><i class="dot"></i>Credit payments</span><span><i class="dot ghost"></i>Projected</span></div>
+${chart(cash, expenses, financing, forecast, asOf, year)}</section>
 <div class="side"><section class="panel"><div class="panel-head"><h2>Invoices</h2></div>
 <div class="settlement"><div class="ring" style="--progress:${ratio.toFixed(1)}%" role="img" aria-label="${paid} of ${invoices.length} invoices settled"><strong>${paid}<span style="font-size:12px;color:var(--muted)">/${invoices.length}</span></strong></div>
-<div class="settlement-copy"><strong>${gbp(invoiceTotal, true)} invoiced</strong><small>${gbp(outstanding, true)} left to collect</small>${draftNote}</div></div></section>
+<div class="settlement-copy"><strong>${usd(invoiceTotal, true)} invoiced</strong><small>${usd(outstanding, true)} left to collect</small>${draftNote}</div></div></section>
 <section class="panel"><div class="panel-head"><h2>In the pipeline</h2><small>${pipeline.length} projects</small></div><div class="forecast-mark" aria-hidden="true">${segments}</div>
 <ul class="projects">${projects || '<li class="empty">No expected income recorded.</li>'}</ul></section></div></div>
 <div class="bottom"><section class="panel"><div class="panel-head"><h2>Coming up</h2></div><ol class="events">${events.map((event) => eventHtml(event, asOf)).join("")}</ol></section>

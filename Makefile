@@ -1,4 +1,4 @@
-TAX_YEAR ?= 2026-27
+TAX_YEAR ?= 2026
 DATA_DIR := data/$(TAX_YEAR)
 
 .PHONY: summary cashflow views check
@@ -17,4 +17,3 @@ check:
 	python3 bin/cashflow $(DATA_DIR) --check
 	python3 -m unittest discover -s bin -p 'test_*.py'
 	node --test glance/*.test.js
-	node bin/check_uc.mjs

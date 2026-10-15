@@ -1,54 +1,47 @@
 # Sole books
 
-Your sole-trader books, in files you own. Give your agent the figures and evidence, then see your income, costs, invoices and cashflow in one place.
+Your sole-proprietor books, in files you own. Give your agent the figures and evidence, then see income, costs, invoices and cashflow in one place.
 
-Sole books brings the day-to-day work into a repo: CSV ledgers you can inspect, an agent that helps maintain them, and a read-only dashboard for the bigger picture. Keep track of what has been paid, what is still expected and what needs doing next without hiding the working behind a bookkeeping app.
+CSV ledgers keep the working inspectable. Glance, the read-only dashboard, brings together what has been paid, what is expected and what needs doing next.
 
-It is built for UK sole traders using cash-basis records, with cashflow projections and Universal Credit tracking alongside the books.
+## US experimental edition
 
-![Sole books with Grok Bot, Cursor cloud, and the dashboard preview.](docs/how-i-use-it.png)
+This branch is a starting point for US bookkeeping, not a production-ready tax product. The author is not a US resident. This edition was researched extensively with AI using official US sources. It has not been professionally reviewed. Verify its assumptions with a qualified US tax professional before relying on it.
 
-*How I use it: Grok Bot, Cursor cloud, and the dashboard preview.*
+The supported starting scope is a US-resident individual running a service business as a sole proprietor, using cash-basis records, USD and a calendar year. A disregarded single-member LLC may use the same federal reporting framework, but its state fees and legal obligations still need separate review. There is no payroll, inventory accounting, partnership or corporate return, nonresident workflow, multistate tax engine or benefits calculator.
 
-## Try the example
-
-Opening this repo, forking it, or using **Use this template** lands on `demo`. Explore a fictional 2026-27 year for Jordan Hale, trading as Hale Studio. See how receipts, expenses and invoices feed the dashboard before adding anything of your own.
+The UK template remains on `uk`, and `demo` contains fictional UK books. Neither is the starting branch for this edition.
 
 ## Make it yours
 
-You are on `uk`, the empty template. Create your own branch from here before adding personal records. Use `demo` to explore the fictional Hale Studio year.
+Use a private repository for real records. Never add personal records to the shared `US-experimental` branch. Glance has no login and binds to localhost. Keep it there, or use an authenticated tunnel for remote access.
 
-Use a private repository for real records. The dashboard is localhost-only and has no login. Keep it that way, or use an authenticated tunnel for remote access.
-
-1. Get the `uk` branch. A fork has it. **Use this template** copies `demo` unless you include all branches. If `uk` is not in your copy, fetch it from this repo.
-2. Create your own branch from `uk`.
-3. Work through [the UK setup checks](.agent/skills/uk-bookkeeping/references/tax.md#before-using-real-books), then let your agent fill the CSVs, invoices and `state.md` from your figures.
-4. When this template improves, merge upstream `uk` into your branch. Your data files will conflict on purpose. Keep your rows and take the structural changes.
-
-Personal records do not go on `demo` or `uk`. `uk` stays empty because that is the branch that gets upgraded later.
+1. Get `US-experimental` and create your own private working branch from it.
+2. Work through [US setup checks](.agent/skills/us-bookkeeping/references/federal.md#before-using-real-books). Confirm your state and local obligations before issuing invoices or relying on tax treatment.
+3. Fill `trader.csv`, `state.md` and `todo.md` from your own evidence. Do not put SSNs, EINs, W-9 forms or bank credentials in this repository.
+4. Record receipts and paid costs in `data/2026/`. Keep invoices, fees, refunds and sales tax distinct. An unpaid invoice is not cash-basis income.
+5. Review upstream changes before merging them into your branch. Preserve your rows when taking schema changes.
 
 ## What you get
 
-- CSV ledgers, cashflow, Universal Credit periods, and a to-do list
-- Glance, a read-only dashboard. From the repo root: `npm install --prefix glance`, then `npm run dev --prefix glance`, then open http://127.0.0.1:48173
-- Totals with `make summary`, `make cashflow`, and `make check`
-- An invoice skeleton in `templates/invoices/`
-- `AGENTS.md`, the operating manual for an agent
-- Bundled skills for UK bookkeeping, reconciling the books and managing invoices
+- Income, expenses, equipment, invoice records and cashflow projections in plain CSVs
+- Separate records for personal tax payments and sales tax held for government
+- Glance: `npm install --prefix glance`, then `npm run dev --prefix glance`, then open http://127.0.0.1:48173
+- `make summary` for recorded income less reviewed deductions, `make cashflow` for cash movements, and `make check` for consistency checks
+- A US invoice skeleton in `templates/invoices/`
+- Agent workflows for US bookkeeping, reconciliation and invoices in [.agent/skills/](.agent/skills/)
 
-The ledger tools need Python 3 and Make. The UC checker and full test suite also need Node.js with its built-in test runner. The dashboard needs npm too. You choose the agent and how it gets access to the repo.
+The ledger tools need Python 3 and Make. The complete checks also need Node.js with its built-in test runner. Glance needs npm. Choose your own agent and check what its provider can access.
 
-The workflows live in [.agent/skills/](.agent/skills/). UK tax and benefit guidance lives with the bookkeeping skill.
-
-On `uk` the ledgers have headers and no rows. Zeros on the dashboard are the empty template. `demo` is a fictional 2026-27 year.
+The ledgers are empty. Dashboard zeros mean no records, not a completed or reconciled year. Select another calendar year with `make summary TAX_YEAR=2027` after creating its ledger folder from the current headers.
 
 ## You stay in control
 
-Your agent can maintain records, check totals and prepare invoices or reports. You review the evidence and approve anything sent outside the repo. Keep personal books and supporting documents in a private repository, and check what your chosen agent provider can access.
+Your agent can maintain records, reconcile evidence and prepare documents. You approve anything sent outside the repo, including invoices, filings and payments.
 
-This is a bookkeeping framework, not an accountant or a filing service. Its checks do not certify tax or benefit compliance. Check the [UK tax requirements](.agent/skills/uk-bookkeeping/references/tax.md) and [UC calculation scope](.agent/skills/uk-bookkeeping/references/universal-credit.md#supported-calculation) against your circumstances before relying on the figures.
+This is not an accountant or a filing service. It does not calculate federal income tax, self-employment tax, estimated payments, depreciation elections or state liabilities. A summary is a bookkeeping subtotal, not a completed Schedule C or tax return. Sales-tax entries track recorded collections, refunds and remittances, not whether a sale is taxable or where registration is required.
 
-It does not provide Making Tax Digital submissions or VAT accounting. If those apply, use the compatible software and workflows required for your circumstances. UC forecasts use separately reconciled assessment periods, with MIF and loss checks for the supported scope. Complex cases use a reviewed manual estimate. The [UC reference](.agent/skills/uk-bookkeeping/references/universal-credit.md) explains the inputs and migration from earlier books.
+Read the [federal recording rules](.agent/skills/us-bookkeeping/references/federal.md) and [state, local and information-return checks](.agent/skills/us-bookkeeping/references/state-and-reporting.md). Verify current official guidance for your circumstances. Passing checks does not establish deductibility, completeness or compliance.
 
 ## Licence
 

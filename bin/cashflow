@@ -28,7 +28,7 @@ def add_actuals(rows, data_dir, errors):
             "status": "actual",
             "counterparty": row.get("client", ""),
             "description": row.get("description", ""),
-            "amount": money(row.get("amount_gbp"), data_dir / "income.csv", idx, "amount_gbp", errors),
+            "amount": money(row.get("amount_usd"), data_dir / "income.csv", idx, "amount_usd", errors),
             "source": row.get("receipt_file", ""),
         })
 
@@ -48,21 +48,21 @@ def add_actuals(rows, data_dir, errors):
                 "status": "actual",
                 "counterparty": row.get(name_field, ""),
                 "description": row.get(desc_field, ""),
-                "amount": -money(row.get("total_gbp"), path, idx, "total_gbp", errors),
+                "amount": -money(row.get("total_usd"), path, idx, "total_usd", errors),
                 "source": row.get("receipt_file", ""),
             })
 
-    path = data_dir / "hmrc.csv"
+    path = data_dir / "tax-payments.csv"
     for idx, row in enumerate(read_rows(path, errors), start=2):
-        amount = money(row.get("amount_gbp"), path, idx, "amount_gbp", errors)
-        kind = (row.get("type") or "hmrc").lower()
+        amount = money(row.get("amount_usd"), path, idx, "amount_usd", errors)
+        kind = (row.get("type") or "tax").lower()
         if amount > 0 and "refund" not in kind:
             amount = -amount
         rows.append({
             "date": row.get("date", ""),
-            "flow": "hmrc",
+            "flow": "tax",
             "status": "actual",
-            "counterparty": "HMRC",
+            "counterparty": row.get("authority", ""),
             "description": row.get("type", ""),
             "amount": amount,
             "source": row.get("reference", ""),
@@ -70,9 +70,12 @@ def add_actuals(rows, data_dir, errors):
 
 
 def add_projections(rows, path, errors):
-    for idx, row in enumerate(read_rows(path), start=2):
+    for idx, row in enumerate(read_rows(path, errors), start=2):
         status = (row.get("status") or "").strip().lower()
         if status == "cancelled":
+            continue
+        if path.name == "actuals.csv" and (row.get("flow") or "").lower() in ("sales-tax", "sales_tax", "tax", "tax-payment", "tax-payments"):
+            errors.append(f"{path}:{idx}: tax movements belong only in the dedicated tax ledgers")
             continue
         rows.append({
             "date": row.get("date", ""),
@@ -80,13 +83,13 @@ def add_projections(rows, path, errors):
             "status": row.get("status", "projected"),
             "counterparty": row.get("counterparty", ""),
             "description": row.get("description", ""),
-            "amount": money(row.get("amount_gbp"), path, idx, "amount_gbp", errors),
+            "amount": money(row.get("amount_usd"), path, idx, "amount_usd", errors),
             "source": row.get("source", ""),
         })
 
 
 def fmt(value):
-    return f"£{value:,.2f}"
+    return f"${value:,.2f}"
 
 
 def main():
@@ -102,6 +105,13 @@ def main():
     opening = money(args.opening, "opening", 0, "opening", errors)
     rows = []
     add_actuals(rows, args.data_dir, errors)
+    path = args.data_dir / "sales-tax.csv"
+    for idx, row in enumerate(read_rows(path, errors), 2):
+        amount = money(row.get("amount_usd"), path, idx, "amount_usd", errors)
+        rows.append({"date": row.get("date", ""), "flow": "sales-tax", "status": "actual",
+                     "counterparty": row.get("jurisdiction", ""), "description": row.get("type", ""),
+                     "amount": amount if row.get("type") == "collection" else -amount,
+                     "source": row.get("evidence_file", "")})
     add_projections(rows, args.cash_actuals, errors)
     add_projections(rows, args.projections, errors)
     rows.sort(key=lambda r: (r.get("date") or "", 0 if r.get("status") == "actual" else 1, r.get("counterparty") or ""))
@@ -136,8 +146,7 @@ def main():
         print("\nProblems", file=sys.stderr)
         for error in errors:
             print(f"- {error}", file=sys.stderr)
-        if args.check:
-            return 1
+        return 1
     return 0
 
 

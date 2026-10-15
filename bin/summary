@@ -34,24 +34,25 @@ def print_rows(title, rows, amount_field, empty_message):
         print(f"- {date}: {supplier} — {description} — {amount}")
 
 def fmt(value):
-    return f"£{value:,.2f}"
+    return f"${value:,.2f}"
 
 def main():
     parser = argparse.ArgumentParser(description="Summarise self-employment CSV records.")
     parser.add_argument("data_dir", type=Path)
-    parser.add_argument("--check", action="store_true", help="fail if ledger money or tax-year dates are invalid")
+    parser.add_argument("--check", action="store_true", help="validate ledger schemas, money and calendar-year dates (errors always fail)")
     parser.add_argument("--details", action="store_true", help="print income and claimed expense rows")
     args = parser.parse_args()
 
     errors = []
-    income_rows = read_rows(args.data_dir / "income.csv")
-    expense_rows = read_rows(args.data_dir / "expenses.csv")
-    income_count, income, _ = total(args.data_dir / "income.csv", ["amount_gbp"], errors)
+    income_rows = read_rows(args.data_dir / "income.csv", errors)
+    expense_rows = read_rows(args.data_dir / "expenses.csv", errors)
+    sales_rows = read_rows(args.data_dir / "sales-tax.csv", errors)
+    income_count, income, _ = total(args.data_dir / "income.csv", ["amount_usd"], errors)
     expense_count, expenses, expense_categories = total(
-        args.data_dir / "expenses.csv", ["claimable_gbp", "total_gbp"], errors, by_category=True
+        args.data_dir / "expenses.csv", ["claimable_usd"], errors, by_category=True
     )
-    asset_count, assets, _ = total(args.data_dir / "assets.csv", ["claimable_gbp", "total_gbp"], errors)
-    hmrc_count, hmrc_paid, _ = total(args.data_dir / "hmrc.csv", ["amount_gbp"], errors)
+    asset_count, assets, _ = total(args.data_dir / "assets.csv", ["claimable_usd"], errors)
+    tax_count, tax_paid, _ = total(args.data_dir / "tax-payments.csv", ["amount_usd"], errors)
 
     profit_before_assets = income - expenses
     rough_profit = income - expenses - assets
@@ -59,12 +60,13 @@ def main():
     print(f"Self-employment summary: {args.data_dir.name}")
     print("-" * 42)
     print(f"Income          {fmt(income):>14}  ({income_count} rows)")
-    print(f"Expenses        {fmt(expenses):>14}  ({expense_count} rows)")
-    print(f"Assets/equipment{fmt(assets):>14}  ({asset_count} rows)")
-    print(f"HMRC paid       {fmt(hmrc_paid):>14}  ({hmrc_count} rows)")
+    print(f"Operating expenses {fmt(expenses):>14}  ({expense_count} rows)")
+    print(f"Reviewed asset deductions {fmt(assets):>14}  ({asset_count} rows)")
+    print(f"Owner tax paid (not business cost) {fmt(tax_paid):>14}  ({tax_count} rows)")
+    print(f"Sales-tax movements (excluded from profit): {len(sales_rows)} rows")
     print("-" * 42)
     print(f"Profit before assets {fmt(profit_before_assets):>8}")
-    print(f"Rough profit         {fmt(rough_profit):>8}")
+    print(f"Profit after reviewed deductions {fmt(rough_profit):>8}")
 
     if expense_categories:
         print("\nExpenses by category")
@@ -72,15 +74,14 @@ def main():
             print(f"- {category}: {fmt(value)}")
 
     if args.details:
-        print_rows("Income rows", sorted(income_rows, key=lambda r: r.get("received_date", "")), "amount_gbp", "no income recorded")
-        print_rows("Claimed expense rows", sorted(expense_rows, key=lambda r: (r.get("paid_date", ""), r.get("supplier", ""))), "claimable_gbp", "no expenses recorded")
+        print_rows("Income rows", sorted(income_rows, key=lambda r: r.get("received_date", "")), "amount_usd", "no income recorded")
+        print_rows("Claimed expense rows", sorted(expense_rows, key=lambda r: (r.get("paid_date", ""), r.get("supplier", ""))), "claimable_usd", "no expenses recorded")
 
     if errors:
         print("\nProblems", file=sys.stderr)
         for error in errors:
             print(f"- {error}", file=sys.stderr)
-        if args.check:
-            return 1
+        return 1
     return 0
 
 if __name__ == "__main__":
