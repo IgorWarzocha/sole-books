@@ -1,1 +1,5 @@
 date,type,number,version,client,related_document,amount_gbp,status,file_pdf,file_html,notes
+2026-06-01,invoice,INV-0001,1,Northwind Print Ltd,,850.00,paid,,,Fictional. Paid 2026-06-12. CSV row only.
+2026-08-04,invoice,INV-0002,1,Northwind Print Ltd,,1200.00,paid,,,Fictional. Paid 2026-08-20. CSV row only.
+2026-10-01,invoice,INV-0003,1,Northwind Print Ltd,,600.00,issued,,invoices/2026/INV-0003.html,Fictional. Issued and unpaid. Not income until the money arrives. Due 2026-10-29.
+2026-11-02,invoice,INV-0004,draft,Northwind Print Ltd,,450.00,draft,,invoices/2026/INV-0004-draft.html,Fictional draft. Not issued. Dated after the 9th so a later receipt would fall in the next assessment period.

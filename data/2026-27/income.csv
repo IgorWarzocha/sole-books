@@ -1,1 +1,3 @@
 received_date,invoice_date,client,invoice_no,description,amount_gbp,account,receipt_file,notes
+2026-06-12,2026-06-01,Northwind Print Ltd,INV-0001,Brand identity for the spring catalogue,850.00,bank transfer,,Fictional receipt.
+2026-08-20,2026-08-04,Northwind Print Ltd,INV-0002,Website refresh,1200.00,bank transfer,,Fictional receipt.

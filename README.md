@@ -1,5 +1,8 @@
 # Sole books
 
+**Demo branch.** The figures here are fiction. Jordan Hale and Hale Studio are not a real trader. Do not add your own records to `demo` or to `uk`. Create your own branch from `uk` and use that.
+
+
 A framework for keeping UK sole-trader books in a repo, with an agent. It is meant to take the place of a paid bookkeeping service.
 
 ![How I use it: Grok Bot, Cursor cloud, and the dashboard preview. It works with anything.](docs/how-i-use-it.png)

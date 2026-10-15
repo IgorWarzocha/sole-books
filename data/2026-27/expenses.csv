@@ -1,1 +1,7 @@
 paid_date,supplier,category,description,total_gbp,business_percent,claimable_gbp,account,receipt_file,notes
+2026-05-12,Paper and Pixel Ltd,software,Studio plan,18.00,100,18.00,debit card,,Fictional. Rate before the August change.
+2026-06-12,Paper and Pixel Ltd,software,Studio plan,18.00,100,18.00,debit card,,Fictional.
+2026-07-12,Paper and Pixel Ltd,software,Studio plan,18.00,100,18.00,debit card,,Fictional.
+2026-08-12,Paper and Pixel Ltd,software,Studio plan,24.00,100,24.00,debit card,,Fictional. New rate. See cashflow/cost-changes.csv.
+2026-09-12,Paper and Pixel Ltd,software,Studio plan,24.00,100,24.00,debit card,,Fictional.
+2026-10-12,Paper and Pixel Ltd,software,Studio plan,24.00,100,24.00,debit card,,Fictional.

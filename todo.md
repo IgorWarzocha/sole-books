@@ -1,8 +1,8 @@
-# Next actions
+# Demo queue
 
-Work on a branch created from `uk`. These items are the empty-template checklist.
+Fiction. Do not close these by writing real records onto this branch.
 
-- [ ] Add your name and bank details
-- [ ] Copy rates from your own statement
-- [ ] Record income when money arrives
-- [ ] Report income and expenses on the 9th of every month if Universal Credit applies
+- [x] Receive INV-0001 and INV-0002
+- [x] Issue INV-0003. It stays unpaid. This demo does not add a receipt.
+- [ ] Report income and expenses on the 9th of every month
+- [ ] Refresh the tax estimate

@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>INV-0003 Hale Studio</title>
+  <style>
+    :root {
+      --charcoal: #2b2b2b;
+      --charcoal-2: #35332f;
+      --clay: #df7856;
+      --clay-dark: #9b513e;
+      --stone: #c8c5bd;
+      --stone-muted: #8f8a80;
+      --paper: #fbfaf7;
+      --paper-soft: #f2eee8;
+      --line: #ddd6cc;
+      --ink: #2b2b2b;
+      --muted: #6f6a62;
+      --canvas: #e7e4de;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 50% 0, #f6f3ed, var(--canvas) 58%),
+        var(--canvas);
+      color: var(--ink);
+      font-family: Aptos, "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 12.5px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 24px auto;
+      background: var(--paper);
+      padding: 16mm 20mm 14mm;
+      position: relative;
+      overflow: hidden;
+      box-shadow:
+        0 28px 70px rgba(30, 41, 59, 0.16),
+        0 2px 12px rgba(30, 41, 59, 0.08);
+    }
+
+    .page::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 5mm;
+      background: linear-gradient(90deg, var(--charcoal), var(--charcoal-2) 72%, var(--clay));
+    }
+
+    .top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) max-content;
+      gap: 34px;
+      align-items: start;
+      padding-bottom: 16px;
+      margin-bottom: 14px;
+      position: relative;
+      box-shadow: 0 1px 0 var(--charcoal), 0 8px 0 -7px var(--clay);
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      font-size: 40px;
+      line-height: 0.95;
+      letter-spacing: 0.13em;
+      font-weight: 750;
+      text-wrap: balance;
+      color: var(--charcoal);
+    }
+
+    h1::after {
+      content: "";
+      display: block;
+      width: 42px;
+      height: 4px;
+      margin-top: 11px;
+      border-radius: 99px;
+      background: var(--clay);
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    p {
+      margin: 0 0 5px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .right {
+      text-align: right;
+    }
+
+    .box-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 34px;
+      align-items: start;
+      margin-bottom: 18px;
+      padding-top: 2px;
+    }
+
+    .box {
+      min-height: 0;
+      padding: 0;
+      background: transparent;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    .box h2,
+    .payment h2 {
+      margin-bottom: 14px;
+    }
+
+    .box h2::before,
+    .payment h2::before {
+      content: "";
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      margin-right: 8px;
+      border-radius: 50%;
+      background: var(--clay);
+      vertical-align: 1px;
+    }
+
+    .box p {
+      margin: 0;
+    }
+
+    .invoice-address,
+    .summary-list {
+      display: grid;
+      grid-template-rows: repeat(3, 16px);
+      row-gap: 2px;
+      align-items: baseline;
+    }
+
+    .address-line {
+      max-width: 62ch;
+      font-size: 12.5px;
+    }
+
+    .invoice-address p {
+      line-height: 16px;
+    }
+
+    .summary-list {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .summary-row {
+      display: grid;
+      grid-template-columns: 76px minmax(0, 1fr);
+      gap: 14px;
+      align-items: baseline;
+      margin: 0;
+      line-height: 16px;
+    }
+
+    .summary-row > :first-child {
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .summary-row > :last-child {
+      justify-self: end;
+      text-align: right;
+    }
+
+    .meta {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2px;
+    }
+
+    .meta td {
+      padding: 4px 0;
+      vertical-align: top;
+    }
+
+    .meta td:first-child {
+      color: var(--muted);
+      padding-right: 14px;
+      white-space: nowrap;
+    }
+
+    .meta td:last-child {
+      white-space: nowrap;
+    }
+
+    table.items {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 0;
+    }
+
+    .items th {
+      background: var(--charcoal);
+      color: var(--stone);
+      text-align: left;
+      padding: 9px 10px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+    }
+
+    .items th:first-child {
+      border-radius: 8px 0 0 8px;
+    }
+
+    .items th:last-child {
+      border-radius: 0 8px 8px 0;
+    }
+
+    .items td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 10px;
+      vertical-align: top;
+    }
+
+    .items .num {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .totals {
+      margin-left: auto;
+      margin-top: 12px;
+      width: 310px;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .totals td {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .totals td:first-child {
+      color: var(--muted);
+    }
+
+    .totals td:last-child {
+      text-align: right;
+      font-weight: 700;
+    }
+
+    .totals .grand td {
+      background: #eadfd8;
+      color: var(--ink);
+      font-size: 17px;
+      border-top: 1px solid var(--clay-dark);
+      border-bottom: 2px solid var(--charcoal);
+    }
+
+    .note {
+      margin-top: 16px;
+      padding: 10px 12px;
+      background: #f5f0ea;
+      border-radius: 10px;
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+
+    .note strong {
+      color: var(--clay-dark);
+    }
+
+    .payment {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 16px;
+    }
+
+    .footer {
+      margin-top: 18px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .placeholder {
+      color: inherit;
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+    }
+
+    .meta,
+    .items {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .items tbody tr:nth-child(even) td {
+      background: color-mix(in oklch, var(--soft) 45%, transparent);
+    }
+
+    strong {
+      font-weight: 750;
+    }
+
+    @media print {
+      body {
+        background: var(--paper);
+      }
+
+      .page {
+        margin: 0;
+        width: auto;
+        min-height: 297mm;
+        box-shadow: none;
+        padding: 12mm;
+      }
+
+      @page {
+        size: A4;
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="top">
+      <div>
+        <h1>INVOICE</h1>
+        <p><strong>Jordan Hale</strong></p>
+        <p class="muted">Trading as Hale Studio</p>
+        <p>18 Example Street</p>
+        <p>Ancoats, Manchester M1 1EX</p>
+        <p>United Kingdom</p>
+        <p>jordan@halestudio.example | 07700 900123</p>
+      </div>
+      <div class="right">
+        <table class="meta">
+          <tr><td>Invoice no.</td><td><strong>INV-0003</strong></td></tr>
+          <tr><td>Invoice date</td><td>1 October 2026</td></tr>
+          <tr><td>Supply date</td><td>1 October 2026</td></tr>
+          <tr><td>Payment due</td><td><strong>29 October 2026</strong></td></tr>
+        </table>
+      </div>
+    </section>
+    <section class="box-grid">
+      <div class="box">
+        <h2>Invoice to</h2>
+        <div class="invoice-address">
+          <p><strong>Northwind Print Ltd</strong></p>
+          <p class="address-line">12 Sample Wharf, Manchester, M15 4FN</p>
+          <p>accounts@northwind.example</p>
+        </div>
+      </div>
+      <div class="box">
+        <h2>Payment</h2>
+        <div class="summary-list">
+          <p class="summary-row"><span>Due</span><strong>29 October 2026</strong></p>
+          <p class="summary-row"><span>Reference</span><strong>INV-0003</strong></p>
+          <p class="summary-row"><span>Terms</span><span>28 days</span></p>
+        </div>
+      </div>
+    </section>
+    <table class="items">
+      <thead>
+        <tr>
+          <th style="width: 52%;">Description</th>
+          <th style="width: 14%;" class="num">Qty</th>
+          <th style="width: 17%;" class="num">Rate</th>
+          <th style="width: 17%;" class="num">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <strong>Shopfront updates</strong><br />
+            <span class="muted">October range pages for the print catalogue.</span>
+          </td>
+          <td class="num">1</td>
+          <td class="num">£600.00</td>
+          <td class="num">£600.00</td>
+        </tr>
+      </tbody>
+    </table>
+    <table class="totals">
+      <tr><td>Subtotal</td><td>£600.00</td></tr>
+      <tr><td>VAT</td><td>£0.00</td></tr>
+      <tr class="grand"><td>Total due</td><td>£600.00</td></tr>
+    </table>
+    <div class="note">
+      <strong>VAT note:</strong> I am not VAT registered. No VAT has been charged on this invoice.
+    </div>
+    <section class="payment">
+      <div>
+        <h2>Bank transfer details</h2>
+        <p>Account name: <strong>Jordan Hale</strong></p>
+        <p>Sort code: 12-34-56</p>
+        <p>Account number: 12345678</p>
+        <p>Payment reference: <strong>INV-0003</strong></p>
+      </div>
+      <div>
+        <h2>Notes</h2>
+        <p>Thank you. This sample invoice is unpaid.</p>
+      </div>
+    </section>
+    <footer class="footer">
+      <p>Sole trader invoice issued by Jordan Hale. Keep a copy of this invoice for your records. Fictional demo document.</p>
+    </footer>
+  </main>
+</body>
+</html>

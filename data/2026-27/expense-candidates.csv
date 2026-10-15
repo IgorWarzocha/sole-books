@@ -1,1 +1,2 @@
 date,supplier,item,amount,currency,amount_gbp,likely_business_percent,status,evidence_file,notes
+2026-09-18,Northern Rail,Day return for a client visit,42.50,GBP,42.50,100,review,,Fictional. Left unresolved so it stays out of the tax totals.

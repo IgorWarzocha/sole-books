@@ -1,6 +1,15 @@
-# Sole-trader books
+# Demo books
 
-- This branch is the empty UK template. Record a real trader's income, costs, and invoices on a branch created from `uk`, not on `uk` itself.
+The figures in this branch are fiction. Jordan Hale, trading as Hale Studio, is a made-up Manchester studio. These are not the user's books.
+
+If the user wants to record their own income, costs, or invoices, stop. Tell them to create their own branch from `uk` and to work there. Do not write personal data onto `demo` or `uk`.
+
+`uk` is the empty template and may be updated later. Their work belongs on their branch, so a later merge can keep their rows and take structural changes.
+
+`demo` is for looking, and for explaining how a feature works. Do not start real books from it.
+
+
+- `uk` is the empty template. Record a real trader's income, costs, and invoices on a branch created from `uk`, not on `uk` or `demo`.
 - `demo` is fictional. Do not treat it as the user's books, and do not write real figures onto it.
 - `uk` may be updated later. Personal rows stay on the user's branch so a merge can keep their data and take structural changes.
 - Use nested `AGENTS.md` files for local heuristics only. Keep ledger facts in the CSVs and durable status in `state.md`.

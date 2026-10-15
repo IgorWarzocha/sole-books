@@ -1,1 +1,3 @@
 date,flow,status,counterparty,description,amount_gbp,source,notes
+2026-10-29,income,issued,Northwind Print Ltd,INV-0003 shopfront updates,600.00,invoices/2026/INV-0003.html,Fictional issued invoice. Cash timing only. Not income until paid.
+2026-12-04,income,expected,Northwind Print Ltd,Winter poster set,400.00,,Fictional pipeline row. Not invoiced.
