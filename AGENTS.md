@@ -1,3 +1,4 @@
+- If `SETUP.md` exists, read it and execute its actions, tick off each completed phase, and delete `SETUP.md` only when all phases are complete.
 - `uk` is the empty, upgradeable template. Real records belong on a private branch created from `uk`, never on `uk` or `demo`. Do not start real books from `demo`.
 - `demo` contains fictional books, not the user's records. Never replace its sample figures with personal data.
 - Keep ledger facts in CSVs, durable status and decisions in `state.md`, and unresolved actions in `todo.md`. Nested guidance owns local exceptions, not ledger facts.
