@@ -1,5 +1,4 @@
-- `uk` is the empty, upgradeable template. Real records belong on a private branch created from `uk`, never on `uk` or `demo`. Do not start real books from `demo`.
-- `demo` contains fictional books, not the user's records. Never replace its sample figures with personal data.
+- This is `demo`, fictional books only: never initialise it or add personal records, and direct real setup to a private branch created from `uk` or `US-experimental` as appropriate.
 - Keep ledger facts in CSVs, durable status and decisions in `state.md`, and unresolved actions in `todo.md`. Nested guidance owns local exceptions, not ledger facts.
 - A later dated confirmation wins over an earlier estimate. The user's confirmation or original evidence wins over an assistant's claim. A prepared report, a submission, an invoice, a receipt and a DWP award are separate events.
 - Never invent figures or evidence. Label estimates. File supplied bank statements, but do not invent a statement-download timetable.
