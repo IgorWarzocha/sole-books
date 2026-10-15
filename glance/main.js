@@ -1,4 +1,6 @@
 import "./style.css";
+import { parseCsv } from "./csv.js";
+import { calculatePeriods, paymentRows } from "./uc.js";
 
 let sources = {};
 
@@ -16,40 +18,6 @@ function esc(value) {
   }[ch]));
 }
 
-function parseCsv(text) {
-  const rows = [];
-  let row = [];
-  let field = "";
-  let quoted = false;
-  const src = text.replace(/^\uFEFF/, "");
-  for (let i = 0; i < src.length; i += 1) {
-    const ch = src[i];
-    if (quoted) {
-      if (ch === '"') {
-        if (src[i + 1] === '"') {
-          field += '"';
-          i += 1;
-        } else quoted = false;
-      } else field += ch;
-    } else if (ch === '"') quoted = true;
-    else if (ch === ",") {
-      row.push(field);
-      field = "";
-    } else if (ch === "\n" || ch === "\r") {
-      if (ch === "\r" && src[i + 1] === "\n") i += 1;
-      row.push(field);
-      field = "";
-      if (row.some((cell) => cell.length)) rows.push(row);
-      row = [];
-    } else field += ch;
-  }
-  if (field.length || row.length) {
-    row.push(field);
-    if (row.some((cell) => cell.length)) rows.push(row);
-  }
-  const [header, ...body] = rows;
-  return body.map((cells) => Object.fromEntries(header.map((name, index) => [name, cells[index] ?? ""])));
-}
 
 function pence(value) {
   const amount = Number(String(value ?? "").trim().replace(/,/g, ""));
@@ -93,12 +61,6 @@ function addMonth(iso) {
   return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}-01`;
 }
 
-function nextNinth(asOf) {
-  const [year, month, day] = asOf.split("-").map(Number);
-  if (day <= 9) return `${year}-${String(month).padStart(2, "0")}-09`;
-  const next = addMonth(`${year}-${String(month).padStart(2, "0")}-01`);
-  return `${next.slice(0, 8)}09`;
-}
 
 function dayCount(from, to) {
   const a = Date.parse(`${from}T00:00:00Z`);
@@ -231,10 +193,11 @@ function invoiceSummary(documents, income) {
 }
 
 function comingUp(tasks, projections, asOf) {
-  const events = [{ when: nextNinth(asOf), label: "UC report", note: "Monthly income & expenses", amount: null, kind: "task" }];
+  const events = parseCsv(fileText("/assessment-periods.csv"))
+    .filter((row) => row.report_deadline && ["prepared", "projected"].includes(row.status))
+    .map((row) => ({ when: row.report_deadline, label: "UC report", note: "Check account task", amount: null, kind: "task" }));
   const undated = [];
   for (const text of tasks) {
-    if (text.toLowerCase().includes("9th of every month")) continue;
     const dates = [...text.matchAll(/\d{4}-\d{2}-\d{2}/g)].map((match) => match[0]).filter((when) => when >= asOf);
     if (dates.length) {
       const time = text.match(/\bat (\d{1,2}:\d{2})\b/);
@@ -267,64 +230,19 @@ function expectedCaption(pipeline) {
   return `${months[0]} – ${months.at(-1)}`;
 }
 
-function universalCredit(asOf) {
-  const text = fileText("/assessment-periods.csv");
-  if (!text) return [];
-  return parseCsv(text).flatMap((row) => {
-    if (!(row.actual_paid_gbp || "").trim()) return [];
-    const amount = pence(row.actual_paid_gbp);
-    if (!amount) return [];
-    const arrived = `${row.notes || ""}`.match(/payment arrived (\d{4}-\d{2}-\d{2})|paid on (\d{4}-\d{2}-\d{2})/i);
-    const when = arrived ? arrived[1] || arrived[2] : row.period_end;
-    if (!when || when > asOf) return [];
-    return [{ when, amount }];
-  });
+function ucPeriods() {
+  return calculatePeriods(parseCsv(fileText("/assessment-periods.csv")), parseCsv(fileText("/rates.csv")));
+}
+
+function universalCredit(asOf, year) {
+  const start = Number(year.slice(0, 4));
+  return paymentRows(ucPeriods(), asOf, true, { from: `${start}-04-06`, to: `${start + 1}-04-05` });
 }
 
 function sumMonth(rows, month) {
   return rows.filter((row) => monthStart(row.when) === month).reduce((sum, row) => sum + row.amount, 0);
 }
 
-function addDays(iso, days) {
-  const date = new Date(`${iso}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
-}
-
-function ucRates() {
-  const row = parseCsv(fileText("/rates.csv")).at(-1);
-  if (!row) return null;
-  const taper = Number(String(row.taper_pence_per_pound).trim());
-  if (!Number.isInteger(taper) || taper < 0 || taper > 100) throw new Error("Invalid UC taper");
-  return {
-    entitlement: pence(row.standard_allowance_gbp) + pence(row.housing_element_gbp),
-    taper,
-    allowance: pence(row.work_allowance_gbp || "0"),
-    capital: pence(row.capital_deduction_gbp || "0"),
-  };
-}
-
-function taperPence(netPence, pencePerPound) {
-  const counted = Math.max(0, netPence);
-  return Math.floor((counted * pencePerPound + 50) / 100);
-}
-
-function awardForPeriod(start, end, income, expenses, financing, projections, rates) {
-  const inWindow = (row) => row.when >= start && row.when <= end;
-  const earned = [
-    ...income.filter(inWindow),
-    ...projections.filter((row) => row.flow.toLowerCase() === "income" && inWindow(row)),
-  ].reduce((sum, row) => sum + row.amount, 0);
-  const spent = [
-    ...expenses.filter(inWindow),
-    ...financing.filter(inWindow),
-    ...projections.filter((row) => ["expense", "financing"].includes(row.flow.toLowerCase()) && inWindow(row)),
-  ].reduce((sum, row) => sum + Math.abs(row.amount), 0);
-  const net = Math.max(0, earned - spent);
-  const counted = Math.max(0, net - rates.allowance);
-  const deduction = taperPence(counted, rates.taper);
-  return Math.max(0, rates.entitlement - deduction - rates.capital);
-}
 
 function expandOngoing(asOf, year) {
   const rows = parseCsv(fileText("/ongoing-costs.csv"));
@@ -354,30 +272,8 @@ function expandOngoing(asOf, year) {
   return forecasts;
 }
 
-function ucForecasts(asOf, income, expenses, financing, projections) {
-  const rates = ucRates();
-  if (!rates) return [];
-  const latest = parseCsv(fileText("/assessment-periods.csv")).at(-1);
-  if (!latest?.period_end) return [];
-  const forecasts = [];
-  const push = (start, end, pay) => {
-    forecasts.push({
-      when: pay,
-      amount: awardForPeriod(start, end, income, expenses, financing, projections, rates),
-    });
-  };
-  if (!(latest.actual_paid_gbp || "").trim()) {
-    const pay = (latest.report_deadline || `${latest.period_end.slice(0, 8)}16`).slice(0, 10);
-    push(latest.period_start, latest.period_end, pay);
-  }
-  let periodEnd = latest.period_end;
-  for (let step = 0; step < 3; step += 1) {
-    const start = addDays(periodEnd, 1);
-    const [year, month] = start.split("-").map(Number);
-    periodEnd = new Date(Date.UTC(year, month, 9)).toISOString().slice(0, 10);
-    push(start, periodEnd, `${periodEnd.slice(0, 8)}16`);
-  }
-  return forecasts.filter((row) => row.when >= asOf);
+function ucForecasts(asOf) {
+  return paymentRows(ucPeriods(), asOf, false);
 }
 
 function chart(income, expenses, financing, uc, projections, asOf, year, includeUc) {
@@ -390,7 +286,7 @@ function chart(income, expenses, financing, uc, projections, asOf, year, include
     const month = monthStart(row.when);
     return month > latest ? month : latest;
   }, current);
-  const ucGhostRows = includeUc ? ucForecasts(asOf, income, expenses, financing, projections) : [];
+  const ucGhostRows = includeUc ? ucForecasts(asOf) : [];
   for (const row of ucGhostRows) {
     const month = monthStart(row.when);
     if (month <= end && month > horizon) horizon = month;
@@ -538,7 +434,7 @@ function render() {
     const cash = income.filter((row) => !NONCASH.some((term) => row.account.toLowerCase().includes(term)));
     const hasPeriods = parseCsv(fileText("/assessment-periods.csv")).some((row) => row.period_end);
     const includeUc = ucPreference(hasPeriods);
-    const uc = universalCredit(asOf);
+    const uc = universalCredit(asOf, year);
     const ucTotal = includeUc ? uc.reduce((sum, row) => sum + row.amount, 0) : 0;
     const receivedCash = cash.reduce((sum, row) => sum + row.amount, 0);
     const received = receivedCash + ucTotal;

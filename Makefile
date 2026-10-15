@@ -16,3 +16,5 @@ check:
 	python3 bin/summary $(DATA_DIR) --check
 	python3 bin/cashflow $(DATA_DIR) --check
 	python3 -m unittest discover -s bin -p 'test_*.py'
+	node --test glance/*.test.js
+	node bin/check_uc.mjs

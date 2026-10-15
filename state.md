@@ -19,3 +19,7 @@ Cash basis. Income when received. Expenses when paid.
 ## Not started
 
 Nothing has been registered, invoiced, or submitted from this branch. There is no Universal Credit award here, and no tax estimate, because there are no figures.
+
+The tax-registration, VAT and MTD decisions have not been made. Record them and the evidence-retention workflow only on the trader's own branch. The setup checklist is in `rules/uk.md`.
+
+UC assessment dates, MIF status, deductions and opening losses are unknown. The empty period ledger makes no claim about entitlement. Any published rate shown is only a starting reference, not the trader's award.

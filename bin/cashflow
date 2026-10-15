@@ -1,27 +1,10 @@
 #!/usr/bin/env python3
 import argparse
-import csv
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from pathlib import Path
 import sys
 
-
-def money(value, path, row_num, field, errors):
-    value = (value or "").strip().replace(",", "")
-    if not value:
-        return Decimal("0")
-    try:
-        return Decimal(value)
-    except InvalidOperation:
-        errors.append(f"{path}:{row_num}: bad money in {field}: {value!r}")
-        return Decimal("0")
-
-
-def read_rows(path):
-    if not path.exists():
-        return []
-    with path.open(newline="") as f:
-        return list(csv.DictReader(f))
+from ledger import money, read_rows
 
 
 def is_deferred_payment(row):
@@ -36,7 +19,7 @@ def is_noncash(row):
 
 
 def add_actuals(rows, data_dir, errors):
-    for idx, row in enumerate(read_rows(data_dir / "income.csv"), start=2):
+    for idx, row in enumerate(read_rows(data_dir / "income.csv", errors), start=2):
         if is_noncash(row):
             continue
         rows.append({
@@ -54,7 +37,7 @@ def add_actuals(rows, data_dir, errors):
         ("assets.csv", "paid_date", "supplier", "item"),
     ]:
         path = data_dir / filename
-        for idx, row in enumerate(read_rows(path), start=2):
+        for idx, row in enumerate(read_rows(path, errors), start=2):
             if is_noncash(row):
                 continue
             if filename == "assets.csv" and is_deferred_payment(row):
@@ -70,7 +53,7 @@ def add_actuals(rows, data_dir, errors):
             })
 
     path = data_dir / "hmrc.csv"
-    for idx, row in enumerate(read_rows(path), start=2):
+    for idx, row in enumerate(read_rows(path, errors), start=2):
         amount = money(row.get("amount_gbp"), path, idx, "amount_gbp", errors)
         kind = (row.get("type") or "hmrc").lower()
         if amount > 0 and "refund" not in kind:

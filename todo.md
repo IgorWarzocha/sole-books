@@ -3,6 +3,9 @@
 Work on a branch created from `uk`. These items are the empty-template checklist.
 
 - [ ] Add your name and bank details
-- [ ] Copy rates from your own statement
+- [ ] Complete the setup checks in rules/uk.md: registration, filing dates, retention, VAT and MTD
+- [ ] Record the evidence storage and any required compatible-software workflow
+- [ ] If claiming UC, copy assessment, reporting and payment dates from your account
+- [ ] If claiming UC, confirm rates, calculation scope, MIF, deductions and opening losses
 - [ ] Record income when money arrives
-- [ ] Report income and expenses on the 9th of every month if Universal Credit applies
+- [ ] Reconcile UC income and allowable expenses separately, then report when prompted by DWP
