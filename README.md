@@ -1,9 +1,10 @@
 # Sole books
 
-**Demo branch.** The figures here are fiction. Jordan Hale and Hale Studio are not a real trader. Do not add your own records to `demo` or to `uk`. Create your own branch from `uk` and use that.
-
-
 A framework for keeping UK sole-trader books in a repo, with an agent. It is meant to take the place of a paid bookkeeping service.
+
+This branch is the example. The figures are fiction. Jordan Hale, trading as Hale Studio, is not a real trader. Real books start from the `uk` branch. Personal records do not go on `demo` or `uk`, because `uk` is what gets upgraded later.
+
+Opening this repo, forking it, or using **Use this template** lands you here, on that fictional year.
 
 ![How I use it: Grok Bot, Cursor cloud, and the dashboard preview. It works with anything.](docs/how-i-use-it.png)
 
@@ -11,21 +12,20 @@ A framework for keeping UK sole-trader books in a repo, with an agent. It is mea
 
 ## Responsibility
 
-This does not file returns, send invoices, or check the figures. The person using it is responsible for their own records, tax, and filings.
+The agents in this repo can keep the books, check the figures, and prepare what would be filed or sent. You are responsible for managing that safely. You decide what goes out, and you check it.
 
-It is not an accountant and it is not legal advice. The authors accept no liability for how it is used.
+It is not an accountant. The authors accept no liability for how it is used.
 
 ## Make it yours
 
-The default branch is `uk`. Fork the repo, or use **Use this template**. That copies `uk` only.
+You are on `demo`, the fictional Hale Studio year. Use it to see how the books work. Do not start real books here.
 
-1. Create your own branch from `uk`.
-2. Let your agent fill the CSVs, invoices, and `state.md` from your figures.
-3. When this template improves, merge upstream `uk` into your branch. Your data files will conflict on purpose. Keep your rows and take the structural changes.
+1. Get the `uk` branch. A fork has it. **Use this template** copies `demo` unless you include all branches. If `uk` is not in your copy, fetch it from this repo.
+2. Create your own branch from `uk`.
+3. Let your agent fill the CSVs, invoices, and `state.md` from your figures.
+4. When this template improves, merge upstream `uk` into your branch. Your data files will conflict on purpose. Keep your rows and take the structural changes.
 
-Personal rows do not belong on `uk`. That branch stays empty so the next update can merge.
-
-`demo` is a fictional 2026-27 year for looking, and for asking an agent how a feature works. It is not a starting point for real books.
+Personal records do not go on `demo` or `uk`. `uk` stays empty because that is the branch that gets upgraded later.
 
 ## What you get
 
@@ -37,7 +37,7 @@ Personal rows do not belong on `uk`. That branch stays empty so the next update 
 
 UK dates and the Universal Credit taper live in `rules/uk.md`. A later country branch can replace that file.
 
-On `uk` the ledgers have headers and no rows. Zeros on the dashboard are the empty template.
+On `uk` the ledgers have headers and no rows. Zeros on the dashboard are the empty template. This branch is a fictional 2026-27 year.
 
 ## Licence
 

@@ -1,12 +1,12 @@
 # Demo books
 
-The figures in this branch are fiction. Jordan Hale, trading as Hale Studio, is a made-up Manchester studio. These are not the user's books.
+This branch is the example. The figures are fiction. Jordan Hale, trading as Hale Studio, is a made-up Manchester studio. These are not the user's books.
 
-If the user wants to record their own income, costs, or invoices, stop. Tell them to create their own branch from `uk` and to work there. Do not write personal data onto `demo` or `uk`.
+Opening the repo, forking it, or using Use this template lands on this branch. Real books start from `uk`. If the user wants to record their own income, costs, or invoices, stop. Tell them to create their own branch from `uk` and to work there.
 
-`uk` is the empty template and may be updated later. Their work belongs on their branch, so a later merge can keep their rows and take structural changes.
+Personal records do not go on `demo` or `uk`. `uk` is the empty template, and it is what gets upgraded later. Their work belongs on their branch, so a later merge can keep their rows and take structural changes.
 
-`demo` is for looking, and for explaining how a feature works. Do not start real books from it.
+Do not start real books from `demo`.
 
 
 - `uk` is the empty template. Record a real trader's income, costs, and invoices on a branch created from `uk`, not on `uk` or `demo`.
