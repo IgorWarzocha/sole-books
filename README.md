@@ -17,10 +17,9 @@ The UK template remains on `uk`, and `demo` contains fictional UK books. Neither
 Use a private repository for real records. Never add personal records to the shared `US-experimental` branch. Glance has no login and binds to localhost. Keep it there, or use an authenticated tunnel for remote access.
 
 1. Get `US-experimental` and create your own private working branch from it.
-2. Work through [US setup checks](.agent/skills/us-bookkeeping/references/federal.md#before-using-real-books). Confirm your state and local obligations before issuing invoices or relying on tax treatment.
-3. Fill `trader.csv`, `state.md` and `todo.md` from your own evidence. Do not put SSNs, EINs, W-9 forms or bank credentials in this repository.
-4. Record receipts and paid costs in `data/2026/`. Keep invoices, fees, refunds and sales tax distinct. An unpaid invoice is not cash-basis income.
-5. Review upstream changes before merging them into your branch. Preserve your rows when taking schema changes.
+2. Ask your agent to set up your books using [SETUP.md](SETUP.md). It will ask for your business details, check what needs researching and help you bring in existing records or work alongside your current tools.
+3. Review the setup with your agent before relying on the books. Confirm your federal, state and local obligations. Do not put SSNs, EINs, W-9 forms or bank credentials in this repository.
+4. Give your agent receipts, paid costs and invoice details as they arrive. An unpaid invoice is not cash-basis income.
 
 ## What you get
 
@@ -29,11 +28,11 @@ Use a private repository for real records. Never add personal records to the sha
 - Glance: `npm install --prefix glance`, then `npm run dev --prefix glance`, then open http://127.0.0.1:48173
 - `make summary` for recorded income less reviewed deductions, `make cashflow` for cash movements, and `make check` for consistency checks
 - A US invoice skeleton in `templates/invoices/`
-- Agent workflows for US bookkeeping, reconciliation and invoices in [.agent/skills/](.agent/skills/)
+- Agent-assisted setup, bookkeeping, reconciliation and invoices
 
 The ledger tools need Python 3 and Make. The complete checks also need Node.js with its built-in test runner. Glance needs npm. Choose your own agent and check what its provider can access.
 
-The ledgers are empty. Dashboard zeros mean no records, not a completed or reconciled year. Select another calendar year with `make summary TAX_YEAR=2027` after creating its ledger folder from the current headers.
+The ledgers are empty. Dashboard zeros mean no records, not a completed or reconciled year. Setup establishes the years and records you need.
 
 ## You stay in control
 
@@ -41,7 +40,7 @@ Your agent can maintain records, reconcile evidence and prepare documents. You a
 
 This is not an accountant or a filing service. It does not calculate federal income tax, self-employment tax, estimated payments, depreciation elections or state liabilities. A summary is a bookkeeping subtotal, not a completed Schedule C or tax return. Sales-tax entries track recorded collections, refunds and remittances, not whether a sale is taxable or where registration is required.
 
-Read the [federal recording rules](.agent/skills/us-bookkeeping/references/federal.md) and [state, local and information-return checks](.agent/skills/us-bookkeeping/references/state-and-reporting.md). Verify current official guidance for your circumstances. Passing checks does not establish deductibility, completeness or compliance.
+Verify current IRS, state and local requirements for your circumstances with a qualified US tax professional. Passing checks does not establish deductibility, completeness or compliance.
 
 ## Licence
 
