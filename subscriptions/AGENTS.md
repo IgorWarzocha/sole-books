@@ -1,6 +1,2 @@
-# Subscriptions
-
-- This folder holds recurring services, domains, and their evidence.
-- Claim a subscription when it supports the work: delivery, admin, research, or a professional presence. Apportion it when personal use is more than incidental.
-- The current monthly rate lives in `cashflow/ongoing-costs.csv`. A change of rate lives in `cashflow/cost-changes.csv`. Months already paid stay in `data/2026-27/expenses.csv`.
-- Do not type next month's subscription into `cashflow/projections.csv`. Glance carries the run-rate forward.
+- Keep recurring-service and domain evidence here. Current monthly rates belong in `cashflow/ongoing-costs.csv`, and rate changes only in `cashflow/cost-changes.csv`.
+- Paid months remain in the expense ledger. Do not add next month's subscription to projections because Glance expands the run-rate.
