@@ -6,17 +6,17 @@ CSV ledgers keep the working inspectable. Glance, the read-only dashboard, bring
 
 ## US experimental edition
 
-This branch is a starting point for US bookkeeping, not a production-ready tax product. The author is not a US resident. This edition was researched extensively with AI using official US sources. It has not been professionally reviewed. Verify its assumptions with a qualified US tax professional before relying on it.
+The US edition is a starting point for bookkeeping, not a production-ready tax product. The author is not a US resident. This edition was researched extensively with AI using official US sources. It has not been professionally reviewed. Verify its assumptions with a qualified US tax professional before relying on it.
 
 The supported starting scope is a US-resident individual running a service business as a sole proprietor, using cash-basis records, USD and a calendar year. A disregarded single-member LLC may use the same federal reporting framework, but its state fees and legal obligations still need separate review. There is no payroll, inventory accounting, partnership or corporate return, nonresident workflow, multistate tax engine or benefits calculator.
 
-The UK template remains on `uk`, and `demo` contains fictional UK books. Neither is the starting branch for this edition.
+For UK books, use the [UK edition](https://github.com/IgorWarzocha/sole-books/tree/uk). The [worked example](https://github.com/IgorWarzocha/sole-books/tree/demo) uses fictional UK records.
 
 ## Make it yours
 
-Use a private repository for real records. Never add personal records to the shared `US-experimental` branch. Glance has no login and binds to localhost. Keep it there, or use an authenticated tunnel for remote access.
+Keep real records in a private repository. Glance has no login and binds to localhost. Keep it there, or use an authenticated tunnel for remote access.
 
-1. Get `US-experimental` and create your own private working branch from it.
+1. Start with a private copy of the [US template](https://github.com/IgorWarzocha/sole-books/tree/US-experimental).
 2. Ask your agent to set up your books using [SETUP.md](SETUP.md). It will ask for your business details, check what needs researching and help you bring in existing records or work alongside your current tools.
 3. Review the setup with your agent before relying on the books. Confirm your federal, state and local obligations. Do not put SSNs, EINs, W-9 forms or bank credentials in this repository.
 4. Give your agent receipts, paid costs and invoice details as they arrive. An unpaid invoice is not cash-basis income.
