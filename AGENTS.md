@@ -1,3 +1,4 @@
+- If `SETUP.md` exists, read it and execute its actions, tick off each completed phase, and delete `SETUP.md` only when all phases are complete.
 - `US-experimental` is an empty, experimental US template. Personal books belong on a private branch created from it. Do not put personal rows on distribution branches `US-experimental`, `uk` or `demo`.
 - `uk` and `demo` remain UK editions. Do not import UK tax-year, VAT or Universal Credit rules into US records.
 - Load `.agent/skills/us-bookkeeping/SKILL.md` before recording or reviewing US transactions. This branch supports USD calendar-year cash-basis records for a US-resident individual service-business sole proprietor, not automated tax compliance.
