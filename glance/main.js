@@ -1,8 +1,10 @@
 import "./style.css";
+import { createDashboardUpdater, selectMonth } from "./update.js";
 import { parseCsv } from "./csv.js";
 import { cents, usd, today, calendarYear, monthStart, addMonth, dayCount, expandOngoing, invoiceSummary, forecastRows } from "./calendar.js";
 
 let sources = {};
+const patch = createDashboardUpdater(document.querySelector("#app"));
 
 const FORECASTS = new Set(["scheduled", "expected", "recurring", "rough", "tbc", "issued"]);
 const NONCASH = ["voucher", "store credit", "payment in kind"];
@@ -245,41 +247,8 @@ function installControls() {
   app.addEventListener("click", (event) => {
     const button = event.target.closest(".month");
     if (!button) return;
-    document.querySelectorAll(".month").forEach((item) => {
-      const selected = item === button;
-      item.classList.toggle("selected", selected);
-      item.setAttribute("aria-pressed", String(selected));
-    });
-    document.getElementById("selected-month").textContent = button.dataset.month;
-    document.getElementById("selected-income").textContent = button.dataset.income;
-    document.getElementById("selected-cost").textContent = button.dataset.cost;
-    document.getElementById("selected-credit").textContent = button.dataset.credit;
+    selectMonth(app, button.dataset.month);
   });
-}
-
-function patch(html) {
-  const template = document.createElement("template");
-  template.innerHTML = html.trim();
-  const next = template.content.querySelector("main");
-  const app = document.querySelector("#app");
-  const current = app.querySelector("main");
-  if (!current || !next) {
-    app.replaceChildren(next);
-    return;
-  }
-  const selected = current.querySelector(".month.selected")?.dataset.month;
-  for (const sel of ["header", ".hero", ".metrics", ".board", ".bottom"]) {
-    const live = current.querySelector(sel);
-    const fresh = next.querySelector(sel);
-    if (!live || !fresh) {
-      current.replaceWith(next);
-      return;
-    }
-    if (live.innerHTML !== fresh.innerHTML) live.replaceWith(fresh);
-  }
-  if (!selected) return;
-  const button = [...current.querySelectorAll(".month")].find((item) => item.dataset.month === selected);
-  if (button && button.getAttribute("aria-pressed") !== "true") button.click();
 }
 
 function render() {
